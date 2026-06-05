@@ -79,9 +79,11 @@ Sessions are derived from schedule items with `isCheckInPoint: true`. There is n
 | File | Purpose |
 |------|---------|
 | `public/index.html` | Implementation-ready SPA — calls the Express backend via relative API paths |
-| `camp-platform-demo.html` | Standalone offline demo — all API calls handled by an embedded MockAPI |
+| `demo-site/camp-platform.html` | Standalone offline demo — all API calls handled by an embedded MockAPI. This is the canonical demo source. |
 
-Both files share identical UI code. The mode badge in the header shows **PRE-CAMP** (amber) or **AT CAMP** (green) at all times.
+`demo-site/` is the static demo site deployed to Vercel (`yc-camp-demo.vercel.app`): the landing `index.html`, `camp-platform.html`, `exec-presentation.html`, and `assets/`. Vercel serves this folder via the root `vercel.json` (`outputDirectory: demo-site`, no build).
+
+Both demo files share identical UI code. The mode badge in the header shows **PRE-CAMP** (amber) or **AT CAMP** (green) at all times.
 
 In the demo, clicking the mode badge switches mode for any user (no server needed). In the live app, only admins can switch mode.
 
