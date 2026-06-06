@@ -731,9 +731,15 @@ RENDER.home=async function renderHome(){
     <div class="rowsb"><span class="sub" style="font-size:.74rem">${h.campers||0} campers · ${h.leaders||0} leaders</span>${al.text?`<span class="accbadge ${al.primary}">${al.text}</span>`:''}</div></div>`;
   if(h.churches?.length){
     body+=`<h3 class="sec">By ministry</h3>`;
-    body+=h.churches.map(c=>`<div class="card" style="padding:9px 12px"><div class="rowsb" style="align-items:center;gap:8px">
-      <div style="font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)} <span class="sub">· ${esc(c.zone||'—')}</span></div>
-      <div style="display:flex;gap:7px;white-space:nowrap;font-size:.72rem;color:var(--muted)"><span title="Male students">♂ ${c.maleStudents}</span><span title="Female students">♀ ${c.femaleStudents}</span><span title="Male leaders">L♂ ${c.maleLeaders}</span><span title="Female leaders">L♀ ${c.femaleLeaders}</span><b style="color:var(--ink)">Σ ${c.total}</b></div></div></div>`).join('');
+    const gcols='grid-template-columns:1fr 58px 20px 58px 20px 34px';
+    const hdr=`<div style="display:grid;${gcols};align-items:end;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line)"><span></span><span style="text-align:center">Student</span><span></span><span style="text-align:center">Leader</span><span></span><span style="text-align:center">Total</span></div>`;
+    const rows=h.churches.map(c=>`<div style="display:grid;${gcols};align-items:center;padding:7px 0;border-top:1px solid var(--line)">
+      <span style="font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span>
+      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleStudents}</b> <b style="color:#db2777">${c.femaleStudents}</b></span><span></span>
+      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleLeaders}</b> <b style="color:#db2777">${c.femaleLeaders}</b></span><span></span>
+      <span style="text-align:center;font-weight:800;color:var(--ink)">${c.total}</span>
+    </div>`).join('');
+    body+=`<div class="card" style="padding:8px 12px">${hdr}${rows}</div>`;
   }else{
     body+=`<h3 class="sec">Accommodation registrations</h3>`;
     body+=`<div class="card"><div class="rowsb"><b>△ Tent</b><span class="pill info">${tent} registered</span></div>
@@ -758,14 +764,24 @@ async function renderHomeAtCamp(){
   const [d,feed]=await Promise.all([api('/home'),api('/notifications')]);
   const DUE=d.checkInsDue||0;
   const tb=document.getElementById('tabDue');if(tb){if(DUE>0){tb.style.display='grid';tb.textContent=DUE;}else tb.style.display='none';}
+  let myAccom='';
+  if(ACTOR.role==='church'){try{const [mr,rooms,alloc]=await Promise.all([api('/registrants'),api('/classrooms'),api('/allocations')]);
+    const mine=mr.filter(r=>r.kind==='camper');const tentN=mine.filter(r=>r.accommodationKind==='tent').length;const clsN=mine.filter(r=>r.accommodationKind==='classroom').length;
+    const parts=[];if(tentN>0)parts.push('Tents');
+    const myKeys=[ACTOR.churchId+'|male',ACTOR.churchId+'|female'];const roomNames=[];
+    Object.entries(alloc||{}).forEach(([rid,entries])=>{(entries||[]).forEach(e=>{if(myKeys.includes(e.key)){const rm=(rooms||[]).find(r=>r.id===rid);if(rm&&!roomNames.includes(rm.name))roomNames.push(rm.name);}});});
+    roomNames.forEach(n=>parts.push(n));if(clsN>0&&!roomNames.length)parts.push('Classroom (TBC)');
+    myAccom=parts.join(' · ')||'To be confirmed';
+  }catch(e){myAccom='To be confirmed';}}
   // Tiles: only screens NOT already on the quick bar (Daily Check-in, Search, Notices, Admin live there).
   const tiles=[];
-  const fdOver=SETTINGS&&SETTINGS.firstDayOver;
+  const fdOver=SETTINGS&&SETTINGS.firstDayOver&&ACTOR.role==='church';
   tiles.push(fdOver?`<div class="tile" style="opacity:.45;cursor:not-allowed" title="Day 1 only — sign in late arrivals from My Youth"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div><div class="sub" style="font-size:.62rem;margin-top:2px">Closed after day 1</div></div>`:`<div class="tile" onclick="go('firstday')"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div></div>`);
   tiles.push(`<div class="tile" onclick="go('myyouth')"><div class="ic">${ic('users')}</div><div class="l">My Youth Details</div></div>`);
   if(canReadNotes())tiles.push(`<div class="tile" onclick="go('notes')"><div class="ic">${ic('note')}</div><div class="l">Student Notes</div></div>`);
   tiles.push(`<div class="tile" onclick="go('schedule')"><div class="ic">${ic('calendar')}</div><div class="l">Schedule</div></div>`);
   tiles.push(`<div class="tile" onclick="go('devotional')"><div class="ic">${ic('book')}</div><div class="l">Devotional</div></div>`);
+  if(ACTOR.role==='church')tiles.push(`<div class="tile" style="cursor:default"><div class="ic">⌂</div><div class="l">Your Accommodation</div><div class="sub" style="font-size:.62rem;margin-top:2px">${esc(myAccom)}</div></div>`);
   tiles.push(`<div class="tile" onclick="go('faq')"><div class="ic">${ic('help')}</div><div class="l">FAQ</div></div>`);
   const now=Date.now();
   const live=(feed||[]).filter(n=>!n.scheduledFor||new Date(n.scheduledFor).getTime()<=now);
@@ -817,7 +833,7 @@ RENDER.people=async function renderPeople(){
   const churchSel=isDir?`<div><label>Church</label><select id="myChurch" onchange="drawPeople()"><option value="all">All churches</option>${CHURCHES.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>`:'';
   const snapHtml=buildPeopleSnap(ALLREG);
   paint('people',`<div id="psnap">${snapHtml}</div>
-    <div class="selrow">${genderSel}${gradeSel}</div>${isDir?`<div class="selrow">${churchSel}</div>`:''}
+    ${isDir?`<div class="selrow">${churchSel}</div>`:''}<div class="selrow">${genderSel}${gradeSel}</div>
     <div class="search"><span>${ic('search')}</span><input id="pq" placeholder="Search students &amp; leaders…" oninput="drawPeople()"></div>
     <div id="plist"></div>`,'My Youth',(ACTOR.role==='zoneLeader'?(ACTOR.zone+' Zone'):isDir?'All churches':'Your church')+' · '+ALLREG.length+' people');
   drawPeople();
@@ -1071,38 +1087,44 @@ function accomChurches(regs){
     if(r.accommodationKind==='classroom'){c.classroom++;if(r.gender==='male')c.maleCls++;else c.femaleCls++;}else{c.tent++;}});
   return by;
 }
-async function addAlloc(roomId,key){if(!key)return;const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));Object.keys(a).forEach(rid=>{a[rid]=(a[rid]||[]).filter(k=>k!==key);});a[roomId]=a[roomId]||[];a[roomId].push(key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
-async function removeAlloc(roomId,key){const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));a[roomId]=(a[roomId]||[]).filter(k=>k!==key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+async function addAlloc(roomId,key){if(!key)return;const rooms=window._accomRooms||[],a=JSON.parse(JSON.stringify(window._accomAlloc||{}));
+  const by=accomChurches(window._accomRegs||[]);const parts=key.split('|'),c=by[parts[0]];if(!c)return;const total=parts[1]==='male'?c.maleCls:c.femaleCls;
+  let allocated=0;Object.values(a).forEach(arr=>(arr||[]).forEach(e=>{if(e.key===key)allocated+=e.n;}));
+  const availN=total-allocated;if(availN<=0){toast('All of that group is already allocated');return;}
+  const room=rooms.find(r=>r.id===roomId);if(!room)return;const used=(a[roomId]||[]).reduce((s,e)=>s+e.n,0);const rem=room.capacity-used;
+  if(rem<=0){toast('Room is full');return;}
+  const place=Math.min(availN,rem);
+  a[roomId]=a[roomId]||[];const ex=a[roomId].find(e=>e.key===key);if(ex)ex.n+=place;else a[roomId].push({key,n:place});
+  try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();if(place<availN)toast(place+' placed · '+(availN-place)+' still to allocate elsewhere');}catch(e){toast(e.message);}}
+async function removeAlloc(roomId,key){const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));a[roomId]=(a[roomId]||[]).filter(e=>e.key!==key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
 function drawAccom(){
   const regs=window._accomRegs||[],rooms=window._accomRooms||[],alloc=window._accomAlloc||{};
   const by=accomChurches(regs);
   const groups=[];
   Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;if(elig){if(c.maleCls>0)groups.push({key:c.id+'|male',church:c.name,gender:'Guys',n:c.maleCls});if(c.femaleCls>0)groups.push({key:c.id+'|female',church:c.name,gender:'Girls',n:c.femaleCls});}});
   const gByKey=Object.fromEntries(groups.map(g=>[g.key,g]));
-  const assigned=new Set();Object.values(alloc).forEach(arr=>(arr||[]).forEach(k=>assigned.add(k)));
-  const avail=groups.filter(g=>!assigned.has(g.key));
+  const allocByKey={};Object.values(alloc).forEach(arr=>(arr||[]).forEach(e=>{allocByKey[e.key]=(allocByKey[e.key]||0)+e.n;}));
+  groups.forEach(g=>g.avail=g.n-(allocByKey[g.key]||0));
+  const availGroups=groups.filter(g=>g.avail>0);
   const roomCards=rooms.map(rm=>{
-    const gs=(alloc[rm.id]||[]).map(k=>gByKey[k]).filter(Boolean);
-    const used=gs.reduce((s,g)=>s+g.n,0);
-    const chips=gs.map(g=>`<div class="rowsb" style="align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-top:6px"><span style="font-size:.85rem">${esc(g.church)} — ${g.gender} (${g.n})</span><button class="btn ghost sm" onclick="removeAlloc('${rm.id}','${g.key}')">Remove</button></div>`).join('');
-    const addSel=avail.length?`<select onchange="addAlloc('${rm.id}',this.value);this.value=''" style="width:100%;margin-top:8px"><option value="">＋ Add ministry…</option>${avail.map(g=>`<option value="${g.key}">${esc(g.church)} — ${g.gender} (${g.n})</option>`).join('')}</select>`:`<div class="sub" style="margin-top:8px">All eligible groups are allocated.</div>`;
-    const tone=used>rm.capacity?'warn':(used?'ok':'info');const lbl=used>rm.capacity?'Over by '+(used-rm.capacity):used+'/'+rm.capacity;
+    const entries=(alloc[rm.id]||[]).filter(e=>gByKey[e.key]);
+    const used=entries.reduce((s,e)=>s+e.n,0);const rem=rm.capacity-used;
+    const chips=entries.map(e=>{const g=gByKey[e.key];return `<div class="rowsb" style="align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-top:6px"><span style="font-size:.85rem">${esc(g.church)} — ${g.gender} (${e.n})</span><button class="btn ghost sm" onclick="removeAlloc('${rm.id}','${e.key}')">Remove</button></div>`;}).join('');
+    const addSel=(rem>0&&availGroups.length)?`<select onchange="addAlloc('${rm.id}',this.value);this.value=''" style="width:100%;margin-top:8px"><option value="">＋ Add ministry…</option>${availGroups.map(g=>`<option value="${g.key}">${esc(g.church)} — ${g.gender} (${g.avail} left)</option>`).join('')}</select>`:(rem<=0?`<div class="sub" style="margin-top:8px">Room full.</div>`:`<div class="sub" style="margin-top:8px">All eligible groups are allocated.</div>`);
+    const tone=used?'ok':'info';const lbl=used+'/'+rm.capacity;
     return `<div class="card"><div class="rowsb"><div style="font-weight:600">⌂ ${esc(rm.name)} <span class="sub">· cap ${rm.capacity}</span></div><span class="pill ${tone}">${lbl}</span></div>${chips}${addSel}</div>`;
   }).join('');
   const out=[];
   Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;
     if(c.tent>0)out.push([c.name,'Tent',c.tent,'In tents']);
-    if(!elig&&c.classroom>0)out.push([c.name,'Classroom',c.classroom,'Under 75% — not allocated']);
-    if(elig){if(c.maleCls>0&&!assigned.has(c.id+'|male'))out.push([c.name,'Guys',c.maleCls,'Awaiting a room']);
-      if(c.femaleCls>0&&!assigned.has(c.id+'|female'))out.push([c.name,'Girls',c.femaleCls,'Awaiting a room']);}
-  });
-  Object.entries(alloc).forEach(([rid,keys])=>{const rm=rooms.find(r=>r.id===rid);if(!rm)return;const used=(keys||[]).map(k=>gByKey[k]).filter(Boolean).reduce((s,g)=>s+g.n,0);if(used>rm.capacity)out.push([rm.name,'—',used-rm.capacity,'Over capacity']);});
+    if(!elig&&c.classroom>0)out.push([c.name,'Classroom',c.classroom,'Under 75% — not allocated']);});
+  availGroups.forEach(g=>out.push([g.church,g.gender,g.avail,g.avail<g.n?(g.avail+' of '+g.n+' to allocate'):'Awaiting a room']));
   const table=out.length?`<table style="width:100%;border-collapse:collapse;font-size:.82rem">
     <tr style="text-align:left;color:var(--muted)"><th style="padding:6px 4px">Ministry</th><th>Group</th><th>#</th><th>Status</th></tr>
     ${out.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${r[2]}</td><td><span class="sub">${esc(r[3])}</span></td></tr>`).join('')}
   </table>`:'<p class="note-hint">Everyone is allocated ✓</p>';
   const box=document.getElementById('accomBody');if(!box)return;
-  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. You can add more than one ministry to a room. Tent groups, ministries under 75%, and anyone unplaced appear below.</div>
+  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. A room only fills to capacity — any overflow stays available to place in another room. Tent groups, ministries under 75%, and anyone unplaced appear below.</div>
     <h3 class="sec">Classroom rooms</h3>${roomCards}
     <h3 class="sec">Not in a classroom allocation</h3>${table}`;
 }
@@ -1143,7 +1165,7 @@ async function sendNotif(){const title=document.getElementById('ntitle').value.t
 
 /* ===== FIRST DAY SIGN IN ===== */
 RENDER.firstday=async function(){
-  if(SETTINGS&&SETTINGS.firstDayOver){paint('firstday','<div class="infobox" style="margin-top:16px">First Day Sign In is closed — day 1 is over. Sign in late arrivals from <b>My Youth Details</b>.</div>','First Day Sign In','Closed after day 1');return;}
+  if(SETTINGS&&SETTINGS.firstDayOver&&ACTOR.role==='church'){paint('firstday','<div class="infobox" style="margin-top:16px">First Day Sign In is closed — day 1 is over. Sign in late arrivals from <b>My Youth Details</b>.</div>','First Day Sign In','Closed after day 1');return;}
   paint('firstday','<p class="note-hint" style="margin-top:40px;text-align:center">Loading…</p>','First Day Sign In','Select students to confirm');
   const page=await api('/campers?pageSize=300');
   window._fdAll=page.items.filter(c=>c.kind==='student');
@@ -1507,22 +1529,26 @@ async function saveChurch(id){
 /* ===== ADMIN ACCOMMODATION ===== */
 RENDER.adminAccom=async function(){
   const [blocks,rooms,settings]=await Promise.all([api('/accommodation/blocks'),api('/classrooms'),api('/settings')]);
+  window._adminTents=blocks.filter(b=>b.kind==='tent');window._adminRooms=rooms;
   const lockWarn=settings.accommodationLocked?`<div class="warnbox">Accommodation is locked. Only admins can edit. Unlock in Camp settings.</div>`:'';
-  const tentCards=blocks.filter(b=>b.kind==='tent').map(b=>`<div class="card" style="background:#fafbff"><div style="font-weight:700">△ ${esc(b.name)}</div>
-    <label>Capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}">
-    <button class="btn sm" style="margin-top:8px" onclick="saveBlock('${b.id}')">Save</button></div>`).join('');
-  const roomCards=rooms.map(rm=>`<div class="card" style="background:#fafbff"><div style="font-weight:700">⌂ ${esc(rm.name)}</div>
-    <div style="display:flex;gap:6px;margin-top:6px"><div style="flex:2"><label>Room name</label><input class="fld" id="rn_${rm.id}" value="${esc(rm.name)}"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="rc_${rm.id}" value="${rm.capacity}"></div></div>
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" style="flex:1" onclick="saveRoom('${rm.id}')">Save</button><button class="btn red sm" style="flex:1" onclick="delRoom('${rm.id}')">Delete</button></div></div>`).join('');
-  paint('adminAccom',`${lockWarn}<div class="infobox">Camp-wide prices are set in <b>Camp settings</b>. The classroom rooms below are the same rooms used on the director's Accommodation allocations page.</div>
-    <h3 class="sec" style="margin-top:2px">Tents</h3>${tentCards}
-    <h3 class="sec">Classroom rooms</h3>${roomCards}
+  const tentInputs=window._adminTents.map(b=>`<div style="flex:1"><label style="font-size:.62rem">△ ${esc(b.name)} capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}"></div>`).join('');
+  const roomRows=rooms.map(rm=>`<div class="card" style="padding:8px 10px;display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">
+    <div style="flex:2"><label style="font-size:.62rem">Room name</label><input class="fld" id="rn_${rm.id}" value="${esc(rm.name)}"></div>
+    <button class="btn red sm" style="margin-bottom:1px" onclick="delRoom('${rm.id}')">Delete</button>
+    <div style="flex:1"><label style="font-size:.62rem">Capacity</label><input class="fld" id="rc_${rm.id}" value="${rm.capacity}"></div></div>`).join('');
+  paint('adminAccom',`${lockWarn}<div class="infobox">Camp-wide prices are in <b>Camp settings</b>. These classroom rooms are the same rooms used on the Accommodation allocations page.</div>
+    <button class="btn" onclick="saveAllRooms()">Save all</button>
+    <h3 class="sec">Tents</h3><div class="card" style="display:flex;gap:8px">${tentInputs||'<span class="sub">No tent space.</span>'}</div>
+    <h3 class="sec">Classroom rooms</h3>${roomRows||'<p class="note-hint">No rooms yet.</p>'}
     <div class="card"><div class="lbl" style="margin-top:0">Add a classroom room</div>
-    <div style="display:flex;gap:6px"><div style="flex:2"><label>Name</label><input class="fld" id="nrName" placeholder="e.g. Room 7"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="nrCap" value="8"></div></div>
-    <button class="btn" onclick="addRoom()">Add room</button></div>`,'Accommodation setup','Tents &amp; classroom rooms');
+    <div style="display:flex;gap:6px;align-items:flex-end"><div style="flex:2"><label>Name</label><input class="fld" id="nrName" placeholder="e.g. Room 7"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="nrCap" value="8"></div></div>
+    <button class="btn" style="margin-top:8px" onclick="addRoom()">Add room</button></div>`,'Accommodation setup','Tents &amp; classroom rooms');
 };
-async function saveBlock(id){try{await api('/accommodation/blocks/'+id,{method:'PATCH',body:{capacity:Number(val('bc_'+id))||0}});toast('Saved ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
-async function saveRoom(id){try{await api('/classrooms/'+id,{method:'PATCH',body:{name:val('rn_'+id),capacity:Number(val('rc_'+id))||0}});toast('Saved ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function saveAllRooms(){try{
+  await Promise.all((window._adminRooms||[]).map(rm=>api('/classrooms/'+rm.id,{method:'PATCH',body:{name:val('rn_'+rm.id),capacity:Number(val('rc_'+rm.id))||0}})));
+  await Promise.all((window._adminTents||[]).map(b=>api('/accommodation/blocks/'+b.id,{method:'PATCH',body:{capacity:Number(val('bc_'+b.id))||0}})));
+  toast('Saved ✓');RENDER.adminAccom();
+}catch(e){toast(e.message);}}
 async function delRoom(id){if(!confirm('Delete this room?'))return;try{await api('/classrooms/'+id,{method:'DELETE'});toast('Deleted');RENDER.adminAccom();}catch(e){toast(e.message);}}
 async function addRoom(){if(!val('nrName')){toast('Enter a room name');return;}try{await api('/classrooms',{method:'POST',body:{name:val('nrName'),capacity:Number(val('nrCap'))||0}});toast('Room added ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
 
