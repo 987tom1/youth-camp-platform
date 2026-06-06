@@ -281,8 +281,7 @@ const _DB = {
   registrants:_SEED.registrants,
   campers:_SEED.campers,
   accommodationBlocks:[
-    {id:'blk_tent',kind:'tent',name:'Tent City A',price:140,capacity:60,baseTaken:24,taken:29,left:31,pct:48},
-    {id:'blk_cls',kind:'classroom',name:'Classroom Block B',price:120,capacity:40,baseTaken:15,taken:19,left:21,pct:48},
+    {id:'blk_tent',kind:'tent',name:'Tent City',price:140,capacity:120,baseTaken:0,taken:0,left:120,pct:0},
   ],
   classrooms:[
     {id:'rm1',name:'Room 1',capacity:6},
@@ -348,7 +347,7 @@ const _DB = {
   nextId:1000,
 };
 /* ===== DEMO PERSISTENCE (1.10) ===== */
-const _DB_KEY='cp_demo_db_v3';
+const _DB_KEY='cp_demo_db_v4';
 (function(){try{const s=localStorage.getItem(_DB_KEY);if(s){const d=JSON.parse(s);for(const k in d){if(d[k]!=null)_DB[k]=d[k];}}}catch(e){}})();
 function _persist(){try{localStorage.setItem(_DB_KEY,JSON.stringify(_DB));}catch(e){}}
 function resetDemo(){if(!confirm('Reset the demo to its original sample data?'))return;try{localStorage.removeItem(_DB_KEY);}catch(e){}location.reload();}
@@ -394,8 +393,13 @@ async function _apiCore(path,opt={}){
     const scope=isDir?'camp':'church';
     const regs=(ACTOR.role==='church')?_DB.registrants.filter(r=>r.churchId===ACTOR.churchId):ACTOR.role==='zoneLeader'?_DB.registrants.filter(r=>r.zone===ACTOR.zone):_DB.registrants;
     const campers=regs.filter(r=>r.kind==='camper'),leaders=regs.filter(r=>r.kind==='leader');
-    const churches=_DB.churches.map(c=>{const cr=_DB.registrants.filter(r=>r.churchId===c.id);
-      return{...c,registered:cr.length,unpaid:cr.filter(r=>r.paymentStatus!=='paid').length,leaderWwcOutstanding:cr.filter(r=>r.kind==='leader'&&!r.blueCardCollected).length};});
+    const churchList=_DB.churches.filter(c=>isDir||c.zone===ACTOR.zone);
+    const churches=churchList.map(c=>{const cr=_DB.registrants.filter(r=>r.churchId===c.id);
+      const stu=cr.filter(r=>r.kind==='camper'),ld=cr.filter(r=>r.kind==='leader');
+      return{...c,registered:cr.length,total:cr.length,
+        maleStudents:stu.filter(r=>r.gender==='male').length,femaleStudents:stu.filter(r=>r.gender==='female').length,
+        maleLeaders:ld.filter(r=>r.gender==='male').length,femaleLeaders:ld.filter(r=>r.gender==='female').length,
+        leaderWwcOutstanding:ld.filter(l=>!l.blueCardCollected).length};});
     // at-camp home
     const sessions=_DB.schedule.filter(s=>s.isCheckInPoint).map(s=>({id:'ci-'+s.day,label:dayLong(s.day),day:s.day}));
     const now=new Date();const nowStr=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
@@ -415,7 +419,7 @@ async function _apiCore(path,opt={}){
       leaderWwcOutstanding:leaders.filter(l=>!l.blueCardCollected).length,
       accommodation:{tent:regs.filter(r=>r.accommodationKind==='tent').length,classroom:regs.filter(r=>r.accommodationKind==='classroom').length},
       code:_DB.churches.find(c=>c.id===ACTOR.churchId)?.code||null,
-      churches:isDir?churches:[],
+      churches:(isDir||ACTOR.role==='zoneLeader')?churches:[],
       daysToGo:_DB.settings.daysToGo,
       // at-camp
       greetingName:ACTOR.role==='church'?ACTOR.churchName:ACTOR.displayName.split(' ')[0],
@@ -437,8 +441,11 @@ async function _apiCore(path,opt={}){
   if(method==='DELETE'&&path.match(/\/accommodation\/blocks\/[^/]+$/)){const id=path.split('/').pop();_DB.accommodationBlocks=_DB.accommodationBlocks.filter(b=>b.id!==id);return{ok:true};}
   if(method==='PATCH'&&path.match(/\/churches\/[^/]+\/reservations$/)){const id=path.split('/')[2];const c=_DB.churches.find(c=>c.id===id);if(c)c.reservations=body.reservations;return _clone(c||{});}
   if(path==='/classrooms'&&method==='GET')return _clone(_DB.classrooms||[]);
+  if(path==='/classrooms'&&method==='POST'){_DB.classrooms=_DB.classrooms||[];const rm={id:_newId(),name:body.name||'Room',capacity:Number(body.capacity)||0};_DB.classrooms.push(rm);return _clone(rm);}
+  if(method==='PATCH'&&path.match(/\/classrooms\/[^/]+$/)){const id=path.split('/').pop();const rm=(_DB.classrooms||[]).find(r=>r.id===id);if(rm){if(body.name!=null)rm.name=body.name;if(body.capacity!=null)rm.capacity=Number(body.capacity)||0;}return _clone(rm||{});}
+  if(method==='DELETE'&&path.match(/\/classrooms\/[^/]+$/)){const id=path.split('/').pop();_DB.classrooms=(_DB.classrooms||[]).filter(r=>r.id!==id);if(_DB.allocations)delete _DB.allocations[id];return{ok:true};}
   if(path==='/allocations'&&method==='GET')return _clone(_DB.allocations||{});
-  if(path==='/allocations'&&method==='PATCH'){_DB.allocations=_DB.allocations||{};const rid=body.roomId,gk=body.groupKey;if(gk){Object.keys(_DB.allocations).forEach(k=>{if(_DB.allocations[k]===gk)delete _DB.allocations[k];});_DB.allocations[rid]=gk;}else{delete _DB.allocations[rid];}return _clone(_DB.allocations);}
+  if(path==='/allocations'&&method==='PATCH'){_DB.allocations=body.allocations||{};return _clone(_DB.allocations);}
   
   // Registrants
   if(path==='/registrants'&&method==='GET'){const regs=(ACTOR.role==='church')?_DB.registrants.filter(r=>r.churchId===ACTOR.churchId):ACTOR.role==='zoneLeader'?_DB.registrants.filter(r=>r.zone===ACTOR.zone):_DB.registrants;return _clone(regs);}
@@ -722,12 +729,11 @@ RENDER.home=async function renderHome(){
   body+=`<div class="card"><div class="rowsb"><div class="lbl" style="margin:0">${isCamp?'Camp registrations':'Your registrations'}</div><b>${h.registered||0}/${h.expected||'—'}</b></div>
     <div class="bar7"><i style="width:${pct}%"></i></div>
     <div class="rowsb"><span class="sub" style="font-size:.74rem">${h.campers||0} campers · ${h.leaders||0} leaders</span>${al.text?`<span class="accbadge ${al.primary}">${al.text}</span>`:''}</div></div>`;
-  if(isCamp&&h.churches?.length){
-    body+=`<h3 class="sec">By church</h3>`;
-    body+=h.churches.map(c=>{const cp=c.expected?Math.round(c.registered/c.expected*100):0;
-      return `<div class="card"><div class="rowsb"><div style="font-weight:600">${esc(c.name)} <span style="color:var(--muted)">· ${esc(c.zone||'—')}</span></div><b style="font-size:.85rem">${c.registered}/${c.expected||'—'}</b></div>
-      <div class="bar7"><i style="width:${cp}%"></i></div>
-      <div class="pills">${c.leaderWwcOutstanding?`<span class="pill warn">Ldr blue card ${c.leaderWwcOutstanding}</span>`:'<span class="pill ok">Ready</span>'}</div></div>`;}).join('');
+  if(h.churches?.length){
+    body+=`<h3 class="sec">By ministry</h3>`;
+    body+=h.churches.map(c=>`<div class="card" style="padding:9px 12px"><div class="rowsb" style="align-items:center;gap:8px">
+      <div style="font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)} <span class="sub">· ${esc(c.zone||'—')}</span></div>
+      <div style="display:flex;gap:7px;white-space:nowrap;font-size:.72rem;color:var(--muted)"><span title="Male students">♂ ${c.maleStudents}</span><span title="Female students">♀ ${c.femaleStudents}</span><span title="Male leaders">L♂ ${c.maleLeaders}</span><span title="Female leaders">L♀ ${c.femaleLeaders}</span><b style="color:var(--ink)">Σ ${c.total}</b></div></div></div>`).join('');
   }else{
     body+=`<h3 class="sec">Accommodation registrations</h3>`;
     body+=`<div class="card"><div class="rowsb"><b>△ Tent</b><span class="pill info">${tent} registered</span></div>
@@ -737,7 +743,7 @@ RENDER.home=async function renderHome(){
   }
   // Notices (pre-camp; these do not expire)
   try{const feed=await api('/notifications');
-    const notices=(feed||[]).filter(n=>(!n.scheduledFor||new Date(n.scheduledFor).getTime()<=Date.now())&&!isNoticeDismissed(n.id)).slice(0,3);
+    const notices=(feed||[]).filter(n=>(!n.scheduledFor||new Date(n.scheduledFor).getTime()<=Date.now())).slice(0,3);
     body+=`<div class="rowsb" style="margin-top:18px"><h3 class="sec" style="margin:0">Notices</h3><span class="sub" style="font-size:.72rem">Latest 3 · tap to open</span></div>
     <div id="homeNotices" style="margin-top:10px">${notices.length?notices.map(noticeCard).join(''):'<p class="note-hint">All caught up — no notices right now.</p>'}</div>`;
   }catch(e){}
@@ -763,7 +769,7 @@ async function renderHomeAtCamp(){
   tiles.push(`<div class="tile" onclick="go('faq')"><div class="ic">${ic('help')}</div><div class="l">FAQ</div></div>`);
   const now=Date.now();
   const live=(feed||[]).filter(n=>!n.scheduledFor||new Date(n.scheduledFor).getTime()<=now);
-  const notices=live.filter(n=>!isNoticeDismissed(n.id)).slice(0,3);
+  const notices=live.slice(0,3);
   const noticesHtml=notices.length?notices.map(noticeCard).join(''):'<p class="note-hint">All caught up — no notices right now.</p>';
   const html=`<div class="hero"><div class="k">${esc(SETTINGS?.campName||'Youth Camp')} · Live</div>
     <h2>Hi ${esc(d.greetingName||ACTOR.displayName)}</h2>
@@ -784,7 +790,6 @@ function noticeCard(n){
       ${urg?`<div class="ns" style="white-space:normal;color:#7f1d1d;margin:2px 0 1px">${esc(n.body)}</div>`:''}
       <div class="ns">${scope}${urg?' · Urgent':''}</div>
     </div>
-    <button class="ndis" title="Dismiss" onclick="event.stopPropagation();dismissNotice(this)">×</button>
   </div>`;
 }
 const _DISMISS_KEY='cp_dismissed_notices';
@@ -935,6 +940,7 @@ RENDER.checkin=async function renderCheckin(){
     (FILTER.zone==='all'||c.zone===FILTER.zone)&&
     (FILTER.church==='all'||c.churchName===FILTER.church));
   list.sort((a,b)=>a.present-b.present);
+  const dueShown=list.filter(c=>!c.present).length,presentShown=list.length-dueShown;
   const dayBtns=SESSIONS.map(s=>`<button class="${s.id===SEL_SESSION?'on':''}" onclick="selDay('${s.id}')">${esc(_ciLabel(s))}</button>`).join('');
   const gradeOpts=['all',...GRADES].map(g=>`<option value="${g}" ${String(g)===FILTER.grade?'selected':''}>${g==='all'?'All grades':'Grade '+g}</option>`).join('');
   const zoneSelOpts=zonesOpt.map(z=>`<option value="${z}" ${z===FILTER.zone?'selected':''}>${z==='all'?'All zones':z+' Zone'}</option>`).join('');
@@ -946,8 +952,8 @@ RENDER.checkin=async function renderCheckin(){
       <select onchange="setFilter('grade',this.value)">${gradeOpts}</select>
     </div>
     <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-      <div><div class="nm">${esc(_ciLabel(SESSIONS.find(x=>x.id===SEL_SESSION)||{day:'',startTime:'09:00',label:st.sessionLabel}))} check-in</div><div class="sub">${st.presentCount}/${st.total} present${list.length!==st.total?' · showing '+list.length:''}</div></div>
-      ${DUE>0?`<div style="text-align:right"><div style="font-weight:800;font-size:1.4rem;line-height:1;color:#b45309">${DUE}</div><div class="sub" style="font-size:.68rem">not yet checked in</div></div>`:`<span class="pill ok">All checked in ✓</span>`}
+      <div><div class="nm">${esc(_ciLabel(SESSIONS.find(x=>x.id===SEL_SESSION)||{day:'',startTime:'09:00',label:st.sessionLabel}))} check-in</div><div class="sub">${presentShown}/${list.length} present${list.length!==st.total?' · filtered':''}</div></div>
+      ${dueShown>0?`<div style="text-align:right"><div style="font-weight:800;font-size:1.4rem;line-height:1;color:#b45309">${dueShown}</div><div class="sub" style="font-size:.68rem">not yet checked in${list.length!==st.total?' (filtered)':''}</div></div>`:`<span class="pill ok">All checked in ✓</span>`}
     </div>
     ${list.map(c=>`<div class="row ${c.present?'checked':''}"><div class="av">${initials(c.name)}</div>
       <div style="flex:1;min-width:0"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c.location||c.zone)} · Yr ${c.grade||'—'}</div></div>
@@ -1065,20 +1071,23 @@ function accomChurches(regs){
     if(r.accommodationKind==='classroom'){c.classroom++;if(r.gender==='male')c.maleCls++;else c.femaleCls++;}else{c.tent++;}});
   return by;
 }
-async function setAlloc(roomId,groupKey){try{await api('/allocations',{method:'PATCH',body:{roomId,groupKey}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+async function addAlloc(roomId,key){if(!key)return;const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));Object.keys(a).forEach(rid=>{a[rid]=(a[rid]||[]).filter(k=>k!==key);});a[roomId]=a[roomId]||[];a[roomId].push(key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+async function removeAlloc(roomId,key){const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));a[roomId]=(a[roomId]||[]).filter(k=>k!==key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
 function drawAccom(){
   const regs=window._accomRegs||[],rooms=window._accomRooms||[],alloc=window._accomAlloc||{};
   const by=accomChurches(regs);
   const groups=[];
   Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;if(elig){if(c.maleCls>0)groups.push({key:c.id+'|male',church:c.name,gender:'Guys',n:c.maleCls});if(c.femaleCls>0)groups.push({key:c.id+'|female',church:c.name,gender:'Girls',n:c.femaleCls});}});
   const gByKey=Object.fromEntries(groups.map(g=>[g.key,g]));
-  const assigned=new Set(Object.values(alloc));
+  const assigned=new Set();Object.values(alloc).forEach(arr=>(arr||[]).forEach(k=>assigned.add(k)));
+  const avail=groups.filter(g=>!assigned.has(g.key));
   const roomCards=rooms.map(rm=>{
-    const gk=alloc[rm.id];const g=gk?gByKey[gk]:null;
-    const opts=`<option value="">Unassigned</option>`+groups.map(gr=>`<option value="${gr.key}" ${gk===gr.key?'selected':''}>${esc(gr.church)} — ${gr.gender} (${gr.n})</option>`).join('');
-    const tone=g?(g.n>rm.capacity?'warn':'ok'):'info';const lbl=g?(g.n>rm.capacity?'Over capacity':g.n+'/'+rm.capacity):'Empty';
-    return `<div class="card"><div class="rowsb"><div style="font-weight:600">⌂ ${esc(rm.name)} <span class="sub">· cap ${rm.capacity}</span></div><span class="pill ${tone}">${lbl}</span></div>
-      <select onchange="setAlloc('${rm.id}',this.value)" style="width:100%;margin-top:8px">${opts}</select>${g?`<div class="sub" style="margin-top:6px">${esc(g.church)} — ${g.gender}, ${g.n} ${g.n===1?'student':'students'}</div>`:''}</div>`;
+    const gs=(alloc[rm.id]||[]).map(k=>gByKey[k]).filter(Boolean);
+    const used=gs.reduce((s,g)=>s+g.n,0);
+    const chips=gs.map(g=>`<div class="rowsb" style="align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-top:6px"><span style="font-size:.85rem">${esc(g.church)} — ${g.gender} (${g.n})</span><button class="btn ghost sm" onclick="removeAlloc('${rm.id}','${g.key}')">Remove</button></div>`).join('');
+    const addSel=avail.length?`<select onchange="addAlloc('${rm.id}',this.value);this.value=''" style="width:100%;margin-top:8px"><option value="">＋ Add ministry…</option>${avail.map(g=>`<option value="${g.key}">${esc(g.church)} — ${g.gender} (${g.n})</option>`).join('')}</select>`:`<div class="sub" style="margin-top:8px">All eligible groups are allocated.</div>`;
+    const tone=used>rm.capacity?'warn':(used?'ok':'info');const lbl=used>rm.capacity?'Over by '+(used-rm.capacity):used+'/'+rm.capacity;
+    return `<div class="card"><div class="rowsb"><div style="font-weight:600">⌂ ${esc(rm.name)} <span class="sub">· cap ${rm.capacity}</span></div><span class="pill ${tone}">${lbl}</span></div>${chips}${addSel}</div>`;
   }).join('');
   const out=[];
   Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;
@@ -1087,13 +1096,13 @@ function drawAccom(){
     if(elig){if(c.maleCls>0&&!assigned.has(c.id+'|male'))out.push([c.name,'Guys',c.maleCls,'Awaiting a room']);
       if(c.femaleCls>0&&!assigned.has(c.id+'|female'))out.push([c.name,'Girls',c.femaleCls,'Awaiting a room']);}
   });
-  Object.entries(alloc).forEach(([rid,gk])=>{const rm=rooms.find(r=>r.id===rid),g=gByKey[gk];if(rm&&g&&g.n>rm.capacity)out.push([g.church,g.gender,g.n-rm.capacity,"Don't fit in "+rm.name]);});
+  Object.entries(alloc).forEach(([rid,keys])=>{const rm=rooms.find(r=>r.id===rid);if(!rm)return;const used=(keys||[]).map(k=>gByKey[k]).filter(Boolean).reduce((s,g)=>s+g.n,0);if(used>rm.capacity)out.push([rm.name,'—',used-rm.capacity,'Over capacity']);});
   const table=out.length?`<table style="width:100%;border-collapse:collapse;font-size:.82rem">
     <tr style="text-align:left;color:var(--muted)"><th style="padding:6px 4px">Ministry</th><th>Group</th><th>#</th><th>Status</th></tr>
     ${out.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${r[2]}</td><td><span class="sub">${esc(r[3])}</span></td></tr>`).join('')}
   </table>`:'<p class="note-hint">Everyone is allocated ✓</p>';
   const box=document.getElementById('accomBody');if(!box)return;
-  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. Tent groups, ministries under 75%, and anyone unplaced appear in the table below.</div>
+  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. You can add more than one ministry to a room. Tent groups, ministries under 75%, and anyone unplaced appear below.</div>
     <h3 class="sec">Classroom rooms</h3>${roomCards}
     <h3 class="sec">Not in a classroom allocation</h3>${table}`;
 }
@@ -1497,25 +1506,25 @@ async function saveChurch(id){
 
 /* ===== ADMIN ACCOMMODATION ===== */
 RENDER.adminAccom=async function(){
-  const [blocks,settings]=await Promise.all([api('/accommodation/blocks'),api('/settings')]);
-  const locked=settings.accommodationLocked;
-  const lockWarn=locked?`<div class="warnbox">Accommodation is locked. Only admins can edit. Unlock in Camp settings.</div>`:'';
-  const blockCards=blocks.map(b=>`<div class="card" style="background:#fafbff"><div class="rowsb">
-    <div style="font-weight:700">${b.kind==='tent'?'△':'⌂'} ${esc(b.name)}</div><span class="pill info">cap ${b.capacity}</span></div>
+  const [blocks,rooms,settings]=await Promise.all([api('/accommodation/blocks'),api('/classrooms'),api('/settings')]);
+  const lockWarn=settings.accommodationLocked?`<div class="warnbox">Accommodation is locked. Only admins can edit. Unlock in Camp settings.</div>`:'';
+  const tentCards=blocks.filter(b=>b.kind==='tent').map(b=>`<div class="card" style="background:#fafbff"><div style="font-weight:700">△ ${esc(b.name)}</div>
     <label>Capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}">
-    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" style="flex:1" onclick="saveBlock('${b.id}')">Save</button>
-    <button class="btn red sm" style="flex:1" onclick="delBlock('${b.id}')">Delete</button></div></div>`).join('');
-  paint('adminAccom',`${lockWarn}<div class="infobox">Camp-wide tent &amp; classroom prices are set in <b>Camp settings</b>. Define spaces and capacities here; classroom rooms for allocation live on the director's Accommodation allocations page.</div>
-    <h3 class="sec" style="margin-top:2px">Spaces &amp; capacity</h3>${blockCards}
-    <div class="card"><div class="lbl" style="margin-top:0">Add a space</div>
-    <label>Type</label><select id="nbKind"><option value="tent">Tent</option><option value="classroom">Classroom</option></select>
-    <label>Name</label><input class="fld" id="nbName" placeholder="e.g. Tent City B">
-    <label>Capacity</label><input class="fld" id="nbCap" value="100">
-    <button class="btn" onclick="addBlock()">Add space</button></div>`,'Accommodation setup','Spaces &amp; capacity');
+    <button class="btn sm" style="margin-top:8px" onclick="saveBlock('${b.id}')">Save</button></div>`).join('');
+  const roomCards=rooms.map(rm=>`<div class="card" style="background:#fafbff"><div style="font-weight:700">⌂ ${esc(rm.name)}</div>
+    <div style="display:flex;gap:6px;margin-top:6px"><div style="flex:2"><label>Room name</label><input class="fld" id="rn_${rm.id}" value="${esc(rm.name)}"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="rc_${rm.id}" value="${rm.capacity}"></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" style="flex:1" onclick="saveRoom('${rm.id}')">Save</button><button class="btn red sm" style="flex:1" onclick="delRoom('${rm.id}')">Delete</button></div></div>`).join('');
+  paint('adminAccom',`${lockWarn}<div class="infobox">Camp-wide prices are set in <b>Camp settings</b>. The classroom rooms below are the same rooms used on the director's Accommodation allocations page.</div>
+    <h3 class="sec" style="margin-top:2px">Tents</h3>${tentCards}
+    <h3 class="sec">Classroom rooms</h3>${roomCards}
+    <div class="card"><div class="lbl" style="margin-top:0">Add a classroom room</div>
+    <div style="display:flex;gap:6px"><div style="flex:2"><label>Name</label><input class="fld" id="nrName" placeholder="e.g. Room 7"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="nrCap" value="8"></div></div>
+    <button class="btn" onclick="addRoom()">Add room</button></div>`,'Accommodation setup','Tents &amp; classroom rooms');
 };
 async function saveBlock(id){try{await api('/accommodation/blocks/'+id,{method:'PATCH',body:{capacity:Number(val('bc_'+id))||0}});toast('Saved ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
-async function delBlock(id){if(!confirm('Delete this space?'))return;try{await api('/accommodation/blocks/'+id,{method:'DELETE'});toast('Deleted');RENDER.adminAccom();}catch(e){toast(e.message);}}
-async function addBlock(){if(!val('nbName')){toast('Enter a name');return;}try{await api('/accommodation/blocks',{method:'POST',body:{kind:sel('nbKind'),name:val('nbName'),capacity:Number(val('nbCap'))||0}});toast('Space added ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function saveRoom(id){try{await api('/classrooms/'+id,{method:'PATCH',body:{name:val('rn_'+id),capacity:Number(val('rc_'+id))||0}});toast('Saved ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function delRoom(id){if(!confirm('Delete this room?'))return;try{await api('/classrooms/'+id,{method:'DELETE'});toast('Deleted');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function addRoom(){if(!val('nrName')){toast('Enter a room name');return;}try{await api('/classrooms',{method:'POST',body:{name:val('nrName'),capacity:Number(val('nrCap'))||0}});toast('Room added ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
 
 /* ===== ADMIN FAQ (pre-camp) ===== */
 RENDER.adminFaq=async function(){
