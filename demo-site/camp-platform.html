@@ -176,6 +176,7 @@ textarea{min-height:78px;resize:vertical;}
     <section class="screen" id="faq"></section>
     <section class="screen" id="notes"></section>
     <section class="screen" id="budget"></section>
+    <section class="screen" id="accom"></section>
     <section class="screen" id="admin"></section>
     <section class="screen" id="adminAccounts"></section>
     <section class="screen" id="adminAccom"></section>
@@ -224,7 +225,7 @@ const _DB = {
     checkInLocation:'Camp Venue — Main Gate',checkInFrom:'10:00am Sunday',
     registerBaseUrl:'https://register.youthcamp.org',
     checkInDays:['2025-09-29','2025-09-30','2025-10-01','2025-10-02'],
-    accommodationLocked:false,campMode:'pre-camp',
+    accommodationLocked:false,campMode:'pre-camp',firstDayOver:true,
     daysToGo:120,createdAt:'2025-01-01T00:00:00Z',updatedAt:'2025-01-01T00:00:00Z'
   },
   users:[
@@ -252,24 +253,31 @@ const _DB = {
     {id:'r7',firstName:'Sophie',lastName:'Chen',gender:'female',kind:'camper',grade:10,churchId:'c2',churchName:'Hope City',zone:'Blue',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'half',blueCardCollected:false,dietary:null,medical:null,parentName:'Amy Chen',parentPhone:'0422000002',status:'registered'},
     {id:'r10',firstName:'Ava',lastName:'Roberts',gender:'female',kind:'camper',grade:8,churchId:'c2',churchName:'Hope City',zone:'Blue',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:false,dietary:'vegetarian',medical:null,parentName:'Meg Roberts',parentPhone:'0422000010',status:'registered'},
     {id:'r11',firstName:'Lucas',lastName:'Brown',gender:'male',kind:'camper',grade:11,churchId:'c2',churchName:'Hope City',zone:'Blue',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'sponsored',blueCardCollected:false,dietary:null,medical:null,parentName:'Pat Brown',parentPhone:'0422000011',status:'registered'},
-    {id:'r12',firstName:'Ruby',lastName:'Singh',gender:'female',kind:'leader',grade:null,churchId:'c2',churchName:'Hope City',zone:'Blue',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:true,dietary:null,medical:null,parentName:null,parentPhone:null,status:'registered'},
-    {id:'r13',firstName:'Jack',lastName:'Murphy',gender:'male',kind:'camper',grade:9,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'tent',accommodationLabel:'Tent City A',paymentStatus:'paid',feeTier:'tent',blueCardCollected:false,dietary:null,medical:null,parentName:'Rob Murphy',parentPhone:'0433000013',status:'registered'},
+    {id:'r12',firstName:'Sam',lastName:'Patel',gender:'male',kind:'leader',grade:null,churchId:'c2',churchName:'Hope City',zone:'Blue',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:true,dietary:null,medical:null,parentName:null,parentPhone:null,status:'registered'},
+    {id:'r13',firstName:'Jack',lastName:'Murphy',gender:'male',kind:'camper',grade:9,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:false,dietary:null,medical:null,parentName:'Rob Murphy',parentPhone:'0433000013',status:'registered'},
     {id:'r14',firstName:'Chloe',lastName:'Adams',gender:'female',kind:'camper',grade:10,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:false,dietary:null,medical:null,parentName:'Di Adams',parentPhone:'0433000014',status:'registered'},
-    {id:'r15',firstName:'Leo',lastName:'Park',gender:'male',kind:'camper',grade:8,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'tent',accommodationLabel:'Tent City A',paymentStatus:'paid',feeTier:'sponsored',blueCardCollected:false,dietary:null,medical:null,parentName:'Sun Park',parentPhone:'0433000015',status:'registered'},
+    {id:'r15',firstName:'Leo',lastName:'Park',gender:'male',kind:'camper',grade:8,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'sponsored',blueCardCollected:false,dietary:null,medical:null,parentName:'Sun Park',parentPhone:'0433000015',status:'registered'},
     {id:'r16',firstName:'Grace',lastName:'Hall',gender:'female',kind:'leader',grade:null,churchId:'c3',churchName:'Lifehouse',zone:'Green',accommodationKind:'classroom',accommodationLabel:'Classroom Block B',paymentStatus:'paid',feeTier:'classroom',blueCardCollected:false,dietary:null,medical:null,parentName:null,parentPhone:null,status:'registered'},
   ],
   campers:[
-    {id:'p1',firstName:'Emma',lastName:'Williams',gender:'female',grade:9,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:[],dietaryRequirements:['vegetarian'],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Jane Williams',parentPhone:'0411 000 001',atCamp:false,status:'registered',checkInHistory:[],signOutHistory:[]},
-    {id:'p2',firstName:'Liam',lastName:'Davis',gender:'male',grade:10,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:['asthma'],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Bob Davis',parentPhone:'0411 000 002',atCamp:false,status:'registered',checkInHistory:[],signOutHistory:[]},
-    {id:'p3',firstName:'Olivia',lastName:'Brown',gender:'female',grade:8,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:[],dietaryRequirements:['gluten-free'],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:false,timestamp:null},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Sue Brown',parentPhone:'0411 000 003',atCamp:false,status:'registered',checkInHistory:[],signOutHistory:[]},
+    {id:'p1',firstName:'Emma',lastName:'Williams',gender:'female',grade:9,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:[],dietaryRequirements:['vegetarian'],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Jane Williams',parentPhone:'0411 000 001',atCamp:true,status:'checked_in',checkInHistory:[],signOutHistory:[]},
+    {id:'p2',firstName:'Liam',lastName:'Davis',gender:'male',grade:10,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:['asthma'],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Bob Davis',parentPhone:'0411 000 002',atCamp:true,status:'checked_in',checkInHistory:[],signOutHistory:[]},
+    {id:'p3',firstName:'Olivia',lastName:'Brown',gender:'female',grade:8,zone:'Yellow',kind:'student',churchId:'c1',churchName:'Victory Youth',mobile:null,medicalConditions:[],dietaryRequirements:['gluten-free'],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:false,timestamp:null},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Sue Brown',parentPhone:'0411 000 003',atCamp:false,status:'checked_out',checkInHistory:[],signOutHistory:[{id:'so_p3',type:'out',leaderName:'SL',reason:'Doctor appointment',parentsMet:true,timestamp:_ago(120)}]},
     {id:'p4',firstName:'Sarah',lastName:'Lee',gender:'female',grade:null,zone:'Yellow',kind:'leader',churchId:'c1',churchName:'Victory Youth',mobile:'0411 100 001',medicalConditions:[],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:null,parentPhone:null,atCamp:true,status:'checked_in',checkInHistory:[],signOutHistory:[]},
-    {id:'p5',firstName:'Jake',lastName:'Miller',gender:'male',grade:9,zone:'Blue',kind:'student',churchId:'c2',churchName:'Hope City',mobile:null,medicalConditions:['nut allergy'],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Lisa Miller',parentPhone:'0422 000 001',atCamp:false,status:'registered',checkInHistory:[],signOutHistory:[]},
+    {id:'p5',firstName:'Jake',lastName:'Miller',gender:'male',grade:9,zone:'Blue',kind:'student',churchId:'c2',churchName:'Hope City',mobile:null,medicalConditions:['nut allergy'],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Lisa Miller',parentPhone:'0422 000 001',atCamp:true,status:'checked_in',checkInHistory:[],signOutHistory:[]},
     {id:'p6',firstName:'Sophie',lastName:'Chen',gender:'female',grade:10,zone:'Blue',kind:'student',churchId:'c2',churchName:'Hope City',mobile:null,medicalConditions:[],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:'Amy Chen',parentPhone:'0422 000 002',atCamp:false,status:'registered',checkInHistory:[],signOutHistory:[]},
   ],
   accommodationBlocks:[
     {id:'blk_tent',kind:'tent',name:'Tent City A',price:140,capacity:60,baseTaken:24,taken:29,left:31,pct:48},
     {id:'blk_cls',kind:'classroom',name:'Classroom Block B',price:120,capacity:40,baseTaken:15,taken:19,left:21,pct:48},
   ],
+  classrooms:[
+    {id:'rm1',name:'Room 1',capacity:12},
+    {id:'rm2',name:'Room 2',capacity:12},
+    {id:'rm3',name:'Room 3',capacity:10},
+    {id:'rm4',name:'Room 4',capacity:8},
+  ],
+  allocations:{},
   faqs:[
     {id:'faq1',question:'What do I need to bring?',answer:'Sleeping bag, pillow, toiletries, Bible, comfortable clothes, and a positive attitude!',order:1},
     {id:'faq2',question:'When does camp start and end?',answer:'Camp begins Sunday 29 September from 10am and concludes Thursday 3 October at 3pm.',order:2},
@@ -413,6 +421,9 @@ async function _apiCore(path,opt={}){
   if(method==='PATCH'&&path.match(/\/accommodation\/blocks\/[^/]+$/)){const id=path.split('/').pop();const b=_DB.accommodationBlocks.find(b=>b.id===id);if(b)Object.assign(b,body,{updatedAt:_now()});return _clone(b||{});}
   if(method==='DELETE'&&path.match(/\/accommodation\/blocks\/[^/]+$/)){const id=path.split('/').pop();_DB.accommodationBlocks=_DB.accommodationBlocks.filter(b=>b.id!==id);return{ok:true};}
   if(method==='PATCH'&&path.match(/\/churches\/[^/]+\/reservations$/)){const id=path.split('/')[2];const c=_DB.churches.find(c=>c.id===id);if(c)c.reservations=body.reservations;return _clone(c||{});}
+  if(path==='/classrooms'&&method==='GET')return _clone(_DB.classrooms||[]);
+  if(path==='/allocations'&&method==='GET')return _clone(_DB.allocations||{});
+  if(path==='/allocations'&&method==='PATCH'){_DB.allocations=_DB.allocations||{};const rid=body.roomId,gk=body.groupKey;if(gk){Object.keys(_DB.allocations).forEach(k=>{if(_DB.allocations[k]===gk)delete _DB.allocations[k];});_DB.allocations[rid]=gk;}else{delete _DB.allocations[rid];}return _clone(_DB.allocations);}
   
   // Registrants
   if(path==='/registrants'&&method==='GET'){const regs=(ACTOR.role==='church')?_DB.registrants.filter(r=>r.churchId===ACTOR.churchId):ACTOR.role==='zoneLeader'?_DB.registrants.filter(r=>r.zone===ACTOR.zone):_DB.registrants;return _clone(regs);}
@@ -450,8 +461,8 @@ async function _apiCore(path,opt={}){
     return{items:list,total:list.length,pageSize:300,page:1};
   }
   if(path.match(/\/campers\/[^/]+\/notes$/)&&method==='GET'){const id=path.split('/')[2];return _clone(_DB.notes.filter(n=>n.camperId===id));}
-  if(path.match(/\/campers\/[^/]+\/sign-out$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){c.atCamp=false;c.status='checked_out';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'out',...body,authorId:ACTOR.id,timestamp:_now()});}return _clone(c||{});}
-  if(path.match(/\/campers\/[^/]+\/sign-in$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){c.atCamp=true;c.status='checked_in';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'in',...body,authorId:ACTOR.id,timestamp:_now()});}return _clone(c||{});}
+  if(path.match(/\/campers\/[^/]+\/sign-out$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){c.atCamp=false;c.status='checked_out';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'out',...body,authorId:ACTOR.id,timestamp:_now()});_DB.notes.push({id:_newId(),camperId:c.id,camperName:c.firstName+' '+c.lastName,body:'Signed out, Reason: '+(body.reason||'—'),authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
+  if(path.match(/\/campers\/[^/]+\/sign-in$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){const wasOut=(c.signOutHistory||[]).some(e=>e.type==='out');c.atCamp=true;c.status='checked_in';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'in',...body,authorId:ACTOR.id,timestamp:_now()});if(!body.firstDay)_DB.notes.push({id:_newId(),camperId:c.id,camperName:c.firstName+' '+c.lastName,body:wasOut?'Signed back in':'Signed in (late arrival)',authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
 
   // Check-in
   if(path==='/checkin/sessions'&&method==='GET'){
@@ -558,7 +569,7 @@ let SESSIONS=[],SEL_SESSION=null,FILTER={gender:'all',grade:'all',church:'all',z
 let LAST_LEADER='';
 const GRADES=[7,8,9,10,11,12];
 const ZONES=['Yellow','Blue','Green','Red'];
-const ACC_LABEL={tent:'△\uFE0F All tents',classroom:'▢ All classrooms',mixed:'△\uFE0F▢ Mixed'};
+const ACC_LABEL={tent:'△\uFE0F All tents',classroom:'⌂ All classrooms',mixed:'△\uFE0F⌂ Mixed'};
 
 /* ===== UTILS ===== */
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -629,7 +640,7 @@ const TAB_OF={home:'home',codes:'home',people:'people',student:'people',help:'he
   admin:'admin',adminAccounts:'admin',adminFaq:'admin',adminSettings:'admin',adminAccom:'admin',adminData:'admin',
   adminDevos:'admin',adminFaqEdit:'admin',adminSchedEdit:'admin',adminContacts:'admin',
   checkin:'checkin',search:'search',notifs:'notifs',compose:'notifs',
-  camper:'home',myyouth:'home',firstday:'home',schedule:'home',devotional:'home',faq:'home',notes:'home',budget:'home'};
+  camper:'home',myyouth:'home',firstday:'home',schedule:'home',devotional:'home',faq:'home',notes:'home',budget:'home',accom:'home'};
 
 function _showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -659,9 +670,9 @@ function paint(id,html,t,s){
 function buildTabs(){
   let tabs;
   if(CAMP_MODE==='pre-camp'){
-    tabs=[['home','home','Home'],['people','users','My Youth'],['notifs','bell','Notices']];
-    if(ACTOR&&ACTOR.role==='admin')tabs.push(['admin','gear','Admin']);
-    else tabs.push(['help','help','Help']);
+    tabs=[['home','home','Home'],['people','users','My Youth']];
+    if(ACTOR&&ACTOR.role==='admin'){tabs.push(['notifs','bell','Notices']);tabs.push(['admin','gear','Admin']);}
+    else{tabs.push(['help','help','Help']);tabs.push(['notifs','bell','Notices']);}
   }else{
     if(ACTOR&&ACTOR.role==='admin'){
       tabs=[['home','home','Home'],['checkin','check','Check-in'],['search','search','Search'],['admin','gear','Admin']];
@@ -693,6 +704,7 @@ RENDER.home=async function renderHome(){
     <div class="s"><b style="color:${h.leaderWwcOutstanding?'#b91c1c':'#15803d'}">${h.leaderWwcOutstanding||0}</b><span>Ldr blue card</span></div>
   </div>`;
   if(['director','admin'].includes(ACTOR.role))body+=`<div class="card tap" onclick="go('budget')"><div class="rowsb"><div><div style="font-weight:600">Budget &amp; costings</div><div class="sub">Fees, vouchers &amp; sponsorship by ministry</div></div><span class="pill info">View ›</span></div></div>`;
+  if(['director','admin'].includes(ACTOR.role))body+=`<div class="card tap" onclick="go('accom')"><div class="rowsb"><div><div style="font-weight:600">Accommodation allocations</div><div class="sub">Assign classrooms by ministry &amp; gender</div></div><span class="pill info">View ›</span></div></div>`;
   body+=`<div class="card"><div class="rowsb"><div class="lbl" style="margin:0">${isCamp?'Camp registrations':'Your registrations'}</div><b>${h.registered||0}/${h.expected||'—'}</b></div>
     <div class="bar7"><i style="width:${pct}%"></i></div>
     <div class="rowsb"><span class="sub" style="font-size:.74rem">${h.campers||0} campers · ${h.leaders||0} leaders</span>${al.text?`<span class="accbadge ${al.primary}">${al.text}</span>`:''}</div></div>`;
@@ -711,7 +723,7 @@ RENDER.home=async function renderHome(){
     }
     body+=`<h3 class="sec">Accommodation registrations</h3>`;
     body+=`<div class="card"><div class="rowsb"><b>△ Tent</b><span class="pill info">${tent} registered</span></div>
-      <div class="rowsb" style="margin-top:8px"><b>▢ Classroom</b><span class="pill info">${cls} registered</span></div>
+      <div class="rowsb" style="margin-top:8px"><b>⌂ Classroom</b><span class="pill info">${cls} registered</span></div>
       <div class="sub" style="font-size:.74rem;margin-top:8px">Your group's tent vs classroom split. Specific locations are assigned by the camp office.</div></div>`;
     if(ACTOR.role==='church')body+=`<div class="card tap" onclick="go('codes')"><div class="rowsb"><div><div style="font-weight:600"># Registration code</div><div class="sub">Share with your families</div></div><span class="pill info">${esc(h.code||'—')} ›</span></div></div>`;
   }
@@ -725,7 +737,7 @@ RENDER.home=async function renderHome(){
 };
 
 function accLabelOf(tent,cls){const p=tent&&cls?'mixed':tent?'tent':cls?'classroom':'none';
-  return{primary:p,text:p==='tent'?`△ All tents · ${tent}`:p==='classroom'?`▢ All classrooms · ${cls}`:p==='mixed'?`△ Tent ${tent} · ▢ Classroom ${cls}`:''};}
+  return{primary:p,text:p==='tent'?`△ All tents · ${tent}`:p==='classroom'?`⌂ All classrooms · ${cls}`:p==='mixed'?`△ Tent ${tent} · ⌂ Classroom ${cls}`:''};}
 
 /* ===== AT-CAMP HOME ===== */
 async function renderHomeAtCamp(){
@@ -734,7 +746,8 @@ async function renderHomeAtCamp(){
   const tb=document.getElementById('tabDue');if(tb){if(DUE>0){tb.style.display='grid';tb.textContent=DUE;}else tb.style.display='none';}
   // Tiles: only screens NOT already on the quick bar (Daily Check-in, Search, Notices, Admin live there).
   const tiles=[];
-  tiles.push(`<div class="tile" onclick="go('firstday')"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div></div>`);
+  const fdOver=SETTINGS&&SETTINGS.firstDayOver;
+  tiles.push(fdOver?`<div class="tile" style="opacity:.45;cursor:not-allowed" title="Day 1 only — sign in late arrivals from My Youth"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div><div class="sub" style="font-size:.62rem;margin-top:2px">Closed after day 1</div></div>`:`<div class="tile" onclick="go('firstday')"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div></div>`);
   tiles.push(`<div class="tile" onclick="go('myyouth')"><div class="ic">${ic('users')}</div><div class="l">My Youth Details</div></div>`);
   if(canReadNotes())tiles.push(`<div class="tile" onclick="go('notes')"><div class="ic">${ic('note')}</div><div class="l">Student Notes</div></div>`);
   tiles.push(`<div class="tile" onclick="go('schedule')"><div class="ic">${ic('calendar')}</div><div class="l">Schedule</div></div>`);
@@ -800,6 +813,7 @@ function buildPeopleSnap(regs){
   const campers=regs.filter(r=>r.kind==='camper'),leaders=regs.filter(r=>r.kind==='leader');
   const g={male:campers.filter(c=>c.gender==='male').length,female:campers.filter(c=>c.gender==='female').length};
   const gtot=(g.male+g.female)||1;
+  const lg={male:leaders.filter(l=>l.gender==='male').length,female:leaders.filter(l=>l.gender==='female').length};const lgtot=(lg.male+lg.female)||1;
   const grades=GRADES.map(gr=>({gr,n:campers.filter(c=>c.grade===gr).length})),maxG=Math.max(1,...grades.map(x=>x.n));
   const tent=regs.filter(r=>r.accommodationKind==='tent').length,cls=regs.filter(r=>r.accommodationKind==='classroom').length;
   const al=accLabelOf(tent,cls);const wwc=leaders.filter(l=>!l.blueCardCollected).length;
@@ -808,9 +822,12 @@ function buildPeopleSnap(regs){
     <div class="rowsb"><div><div class="lbl" style="margin:0">Campers</div><div class="bignum">${campers.length}</div></div>
     ${al.primary!=='none'?`<span class="accbadge ${al.primary}">${ACC_LABEL[al.primary]||al.primary}</span>`:''}
     </div>
-    <div class="lbl" style="margin-top:12px">Gender split</div>
+    <div class="lbl" style="margin-top:12px">Student split</div>
     <div class="gbar"><i class="m" style="width:${g.male/gtot*100}%"></i><i class="f" style="width:${g.female/gtot*100}%"></i></div>
     <div class="glabels"><span>♂ Guys <b style="color:#2563eb">${g.male}</b></span><span>Girls <b style="color:#db2777">${g.female}</b> ♀</span></div>
+    <div class="lbl" style="margin-top:12px">Leader split</div>
+    <div class="gbar"><i class="m" style="width:${lg.male/lgtot*100}%"></i><i class="f" style="width:${lg.female/lgtot*100}%"></i></div>
+    <div class="glabels"><span>♂ Guys <b style="color:#2563eb">${lg.male}</b></span><span>Girls <b style="color:#db2777">${lg.female}</b> ♀</span></div>
     <div class="lbl" style="margin-top:14px">By grade</div><div class="gradebars">${cols}</div>
     <div class="rowsb" style="margin-top:12px;font-size:.8rem"><span style="font-weight:700">${leaders.length} leaders</span>${wwc?`<span class="pill warn">${wwc} need blue card</span>`:'<span class="pill ok">blue cards ✓</span>'}</div></div>`;
 }
@@ -1025,6 +1042,53 @@ function drawBudget(){
     <div style="font-size:.8rem;color:#cfe0ff">${list.length} registrations · $${subsidy.toLocaleString()} in vouchers &amp; sponsorship</div></div>`;
   const box=document.getElementById('budgetBody');if(box)box.innerHTML=head+`<h3 class="sec">By fee category</h3>`+rows;
 }
+
+/* ===== ACCOMMODATION ALLOCATIONS (director only) ===== */
+RENDER.accom=async function(){
+  if(!['director','admin'].includes(ACTOR.role)){paint('accom','<p class="note-hint" style="margin-top:24px;text-align:center">Accommodation allocations are available to directors only.</p>','Accommodation allocations','');return;}
+  const [regs,rooms,alloc]=await Promise.all([api('/registrants'),api('/classrooms'),api('/allocations')]);
+  window._accomRegs=regs;window._accomRooms=rooms;window._accomAlloc=alloc;
+  paint('accom','<div id="accomBody"></div>','Accommodation allocations','Classrooms by ministry & gender');
+  drawAccom();
+};
+function accomChurches(regs){
+  const by={};
+  regs.filter(r=>r.kind==='camper').forEach(r=>{const c=by[r.churchId]||(by[r.churchId]={id:r.churchId,name:r.churchName,total:0,classroom:0,tent:0,maleCls:0,femaleCls:0});c.total++;
+    if(r.accommodationKind==='classroom'){c.classroom++;if(r.gender==='male')c.maleCls++;else c.femaleCls++;}else{c.tent++;}});
+  return by;
+}
+async function setAlloc(roomId,groupKey){try{await api('/allocations',{method:'PATCH',body:{roomId,groupKey}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+function drawAccom(){
+  const regs=window._accomRegs||[],rooms=window._accomRooms||[],alloc=window._accomAlloc||{};
+  const by=accomChurches(regs);
+  const groups=[];
+  Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;if(elig){if(c.maleCls>0)groups.push({key:c.id+'|male',church:c.name,gender:'Guys',n:c.maleCls});if(c.femaleCls>0)groups.push({key:c.id+'|female',church:c.name,gender:'Girls',n:c.femaleCls});}});
+  const gByKey=Object.fromEntries(groups.map(g=>[g.key,g]));
+  const assigned=new Set(Object.values(alloc));
+  const roomCards=rooms.map(rm=>{
+    const gk=alloc[rm.id];const g=gk?gByKey[gk]:null;
+    const opts=`<option value="">Unassigned</option>`+groups.map(gr=>`<option value="${gr.key}" ${gk===gr.key?'selected':''}>${esc(gr.church)} — ${gr.gender} (${gr.n})</option>`).join('');
+    const tone=g?(g.n>rm.capacity?'warn':'ok'):'info';const lbl=g?(g.n>rm.capacity?'Over capacity':g.n+'/'+rm.capacity):'Empty';
+    return `<div class="card"><div class="rowsb"><div style="font-weight:600">⌂ ${esc(rm.name)} <span class="sub">· cap ${rm.capacity}</span></div><span class="pill ${tone}">${lbl}</span></div>
+      <select onchange="setAlloc('${rm.id}',this.value)" style="width:100%;margin-top:8px">${opts}</select>${g?`<div class="sub" style="margin-top:6px">${esc(g.church)} — ${g.gender}, ${g.n} ${g.n===1?'student':'students'}</div>`:''}</div>`;
+  }).join('');
+  const out=[];
+  Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;
+    if(c.tent>0)out.push([c.name,'Tent',c.tent,'In tents']);
+    if(!elig&&c.classroom>0)out.push([c.name,'Classroom',c.classroom,'Under 75% — not allocated']);
+    if(elig){if(c.maleCls>0&&!assigned.has(c.id+'|male'))out.push([c.name,'Guys',c.maleCls,'Awaiting a room']);
+      if(c.femaleCls>0&&!assigned.has(c.id+'|female'))out.push([c.name,'Girls',c.femaleCls,'Awaiting a room']);}
+  });
+  Object.entries(alloc).forEach(([rid,gk])=>{const rm=rooms.find(r=>r.id===rid),g=gByKey[gk];if(rm&&g&&g.n>rm.capacity)out.push([g.church,g.gender,g.n-rm.capacity,"Don't fit in "+rm.name]);});
+  const table=out.length?`<table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <tr style="text-align:left;color:var(--muted)"><th style="padding:6px 4px">Ministry</th><th>Group</th><th>#</th><th>Status</th></tr>
+    ${out.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${r[2]}</td><td><span class="sub">${esc(r[3])}</span></td></tr>`).join('')}
+  </table>`:'<p class="note-hint">Everyone is allocated ✓</p>';
+  const box=document.getElementById('accomBody');if(!box)return;
+  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. Tent groups, ministries under 75%, and anyone unplaced appear in the table below.</div>
+    <h3 class="sec">Classroom rooms</h3>${roomCards}
+    <h3 class="sec">Not in a classroom allocation</h3>${table}`;
+}
 RENDER.compose=function(){
   const isDir=['director','admin'].includes(ACTOR.role);
   paint('compose',`<label>Send to</label><div class="seg" id="audSeg">
@@ -1062,6 +1126,7 @@ async function sendNotif(){const title=document.getElementById('ntitle').value.t
 
 /* ===== FIRST DAY SIGN IN ===== */
 RENDER.firstday=async function(){
+  if(SETTINGS&&SETTINGS.firstDayOver){paint('firstday','<div class="infobox" style="margin-top:16px">First Day Sign In is closed — day 1 is over. Sign in late arrivals from <b>My Youth Details</b>.</div>','First Day Sign In','Closed after day 1');return;}
   paint('firstday','<p class="note-hint" style="margin-top:40px;text-align:center">Loading…</p>','First Day Sign In','Select students to confirm');
   const page=await api('/campers?pageSize=300');
   window._fdAll=page.items.filter(c=>c.kind==='student');
@@ -1124,7 +1189,7 @@ async function fdConfirmAll(){
   if(btn){btn.textContent='Signing in…';btn.disabled=true;}
   let ok=0,fail=0;
   await Promise.all(pending.map(id=>
-    api('/campers/'+id+'/sign-in',{method:'POST',body:{leaderName:ACTOR.displayName}})
+    api('/campers/'+id+'/sign-in',{method:'POST',body:{leaderName:ACTOR.displayName,firstDay:true}})
       .then(()=>{
         const c=window._fdAll.find(s=>s.id===id);
         if(c)c.atCamp=true;
@@ -1175,7 +1240,7 @@ function filterMyYouth(){
   }
   if(notArrived.length){
     html+=`<h3 class="sec">Late arrivals (${notArrived.length})</h3>`;
-    html+=`<div class="infobox" style="font-size:.8rem;margin-bottom:8px">These students haven't signed in yet. Use First Day Sign In on the home screen, or tap a name here.</div>`;
+    html+=`<div class="infobox" style="font-size:.8rem;margin-bottom:8px">First Day Sign In is closed. Sign in late arrivals here — tap a name, then “Sign in to camp”. A note is logged automatically.</div>`;
     html+=notArrived.map(myRow).join('');
   }
   if(!html)html='<p class="note-hint" style="margin-top:24px;text-align:center">No students match these filters.</p>';
@@ -1191,7 +1256,7 @@ async function openCamper(id,push=true){
     ${!p.atCamp&&p.lastSignOut?`<div class="kv"><span class="k">Signed out by</span><span class="v">${esc(p.lastSignOut.leaderName)}</span></div>
     <div class="kv"><span class="k">Reason</span><span class="v">${esc(p.lastSignOut.reason||'—')}</span></div>
     <div class="kv"><span class="k">Parents met</span><span class="v">${p.lastSignOut.parentsMet?'Yes':'No'}</span></div>`:''}
-    ${p.atCamp?`<button class="btn red" onclick="signOutPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">Sign out of camp</button>`:`<button class="btn" onclick="signInPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">Sign back in to camp</button>`}</div>`;
+    ${p.atCamp?`<button class="btn red" onclick="signOutPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">Sign out of camp</button>`:`<button class="btn" onclick="signInPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">${(p.signOutHistory||[]).some(e=>e.type==='out')?'Sign back in to camp':'Sign in to camp (late arrival)'}</button>`}</div>`;
   const fullName=p.fullName||p.firstName+' '+p.lastName;
   document.getElementById('camper').innerHTML=`<div class="detail-hd"><div class="av-lg">${initials(fullName)}</div>
     <h2>${esc(fullName)}</h2><div style="color:#cfe0ff;font-size:.82rem">${esc(p.zone)} Zone · ${lead?'Leader (18+)':'Grade '+p.grade}</div></div>
@@ -1428,7 +1493,7 @@ RENDER.adminAccom=async function(){
   const locked=settings.accommodationLocked;
   const lockWarn=locked?`<div class="warnbox">Accommodation is locked. Only admins can edit. Unlock in Camp settings.</div>`:'';
   const blockCards=blocks.map(b=>`<div class="card" style="background:#fafbff"><div class="rowsb">
-    <div style="font-weight:700">${b.kind==='tent'?'△':'▢'} ${esc(b.name)}</div><span class="pill info">${b.taken}/${b.capacity}</span></div>
+    <div style="font-weight:700">${b.kind==='tent'?'△':'⌂'} ${esc(b.name)}</div><span class="pill info">${b.taken}/${b.capacity}</span></div>
     <div style="display:flex;gap:6px;margin-top:6px"><div style="flex:1"><label>Capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}"></div>
     <div style="flex:1"><label>Price $</label><input class="fld" id="bp_${b.id}" value="${b.price}"></div></div>
     <label>Already taken (rest of camp)</label><input class="fld" id="bt_${b.id}" value="${b.baseTaken}">
@@ -1437,7 +1502,7 @@ RENDER.adminAccom=async function(){
   const alloc=churches.map(c=>{const t=c.reservations?.find(r=>r.kind==='tent')||{},cl=c.reservations?.find(r=>r.kind==='classroom')||{};
     return `<div class="card" style="background:#fafbff"><div style="font-weight:700;margin-bottom:6px">${esc(c.name)} <span style="color:var(--muted)">· ${esc(c.zone||'—')}</span></div>
     <div style="display:flex;gap:8px"><div style="flex:1"><label>△ Tent spots</label><input class="fld" id="at_${c.id}" value="${t.spots||0}"></div>
-    <div style="flex:1"><label>▢ Classroom spots</label><input class="fld" id="ac_${c.id}" value="${cl.spots||0}"></div></div>
+    <div style="flex:1"><label>⌂ Classroom spots</label><input class="fld" id="ac_${c.id}" value="${cl.spots||0}"></div></div>
     <button class="btn sm" style="width:100%;margin-top:8px" onclick="saveAlloc('${c.id}')">Save allocation</button></div>`;}).join('');
   paint('adminAccom',`${lockWarn}<div class="infobox">Define accommodation spaces and how many spots are allocated to each church.</div>
     <h3 class="sec" style="margin-top:2px">Spaces available</h3>${blockCards}
