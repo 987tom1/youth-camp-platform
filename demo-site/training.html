@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1a30">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YC Training">
+<title>Youth Camp Platform — Training &amp; How-To</title>
+<style>
+:root{--navy:#0c1a30;--blue:#2563eb;--sky:#9cc0ff;--ink:#0f2238;--muted:#5b6b80;--line:#e3e9f2;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#eaf1fb;
+  background:radial-gradient(130% 90% at 50% 0%,#21508f,#0a1322) fixed;min-height:100dvh;
+  display:flex;flex-direction:column;align-items:center;padding:30px 16px 56px;}
+.wrap{width:100%;max-width:860px;}
+a{color:inherit;}
+.kicker{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:var(--sky);}
+h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;color:#fff;}
+.lead{color:#cfe0ff;max-width:60ch;margin-bottom:16px;}
+.badge{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#e7eefb;border-radius:999px;padding:6px 12px;font-size:.74rem;font-weight:700;margin-bottom:6px;}
+.login-note{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:13px 16px;font-size:.82rem;color:#d7e6ff;margin:14px 0 8px;}
+.login-note b{color:#fff;} .login-note code{background:rgba(255,255,255,.16);border-radius:6px;padding:1px 6px;font-size:.92em;}
+
+/* section cards on the dark bg */
+.panel{background:#fff;color:var(--ink);border-radius:20px;padding:22px;box-shadow:0 18px 40px rgba(0,0,0,.32);margin-top:18px;}
+.panel > h2{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:4px;}
+.panel > .scope{color:var(--muted);font-size:.85rem;margin-bottom:8px;}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);}
+
+/* how-to cards */
+.howto{border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-top:12px;background:#fbfcfe;}
+.howto h3{font-size:1rem;margin-bottom:6px;letter-spacing:-.01em;}
+.howto p{color:var(--muted);font-size:.9rem;}
+.howto ol,.howto ul{margin:8px 0 2px;padding-left:20px;}
+.howto li{font-size:.9rem;margin-bottom:5px;color:var(--ink);}
+.howto li::marker{color:var(--blue);font-weight:700;}
+.tip{margin-top:8px;font-size:.82rem;color:#15803d;background:#eafaef;border:1px solid #c7e8d2;border-radius:10px;padding:8px 11px;}
+.tile{display:inline-block;font-size:.7rem;font-weight:700;color:#2851a3;background:#e7efff;border-radius:8px;padding:3px 9px;margin:0 4px 4px 0;}
+
+/* phase divider */
+.phaseband{display:flex;align-items:center;gap:10px;margin:22px 0 2px;}
+.phaseband .ln{flex:1;height:1px;background:var(--line);}
+.ptag{font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:5px 12px;}
+.ptag.pre{background:#fef3e2;color:#b45309;} .ptag.at{background:#e7f7ec;color:#15803d;}
+
+/* role switcher */
+.rolebar{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+.rolebar button{flex:1;min-width:120px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#eaf1fb;
+  border-radius:12px;padding:11px 10px;font-size:.86rem;font-weight:700;cursor:pointer;transition:.12s;}
+.rolebar button .sub{display:block;font-size:.68rem;font-weight:600;color:#aac4ee;margin-top:2px;}
+.rolebar button.on{background:#fff;color:var(--ink);border-color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.25);}
+.rolebar button.on .sub{color:var(--muted);}
+
+/* phase toggle inside a role */
+.phasetoggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:4px 0 2px;}
+.phasetoggle button{border:none;background:#fff;color:var(--muted);padding:8px 18px;font-size:.82rem;font-weight:700;cursor:pointer;}
+.phasetoggle button.on{background:var(--blue);color:#fff;}
+
+.roleblock{display:none;} .roleblock.on{display:block;}
+.phaseblock{display:none;} .phaseblock.on{display:block;}
+
+.foot{margin-top:26px;text-align:center;color:#9fb6d6;font-size:.82rem;}
+.foot a{color:var(--sky);font-weight:700;text-decoration:none;border-bottom:1px solid rgba(156,192,255,.4);}
+.backrow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;}
+@media print{body{background:#fff;color:#000;}.rolebar,.phasetoggle,.nav{display:none;}.roleblock,.phaseblock{display:block!important;}.panel{box-shadow:none;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Youth Camp · Digital Tooling</div>
+  <h1>Training &amp; How-To</h1>
+  <p class="lead">A short, practical guide to running the Youth Camp Platform. Pick your role below — every step matches what you'll actually see in the app. Keep this open on your phone during camp.</p>
+  <div><span class="badge">Demo only · fictional data · no real student information</span></div>
+
+  <div class="login-note">
+    <b>Signing in.</b> Open the app and use a demo account (password <code>demo1234</code>): tap a <b>Quick login</b> button — Church · Zone Leader · Director · Admin — or type an email. The <b>↺ Reset demo data</b> link on the sign-in screen wipes any changes and reloads the sample camp, so explore freely.
+  </div>
+
+  <!-- ===== EVERYONE: BASICS ===== -->
+  <div class="panel">
+    <div class="eyebrow">Start here · everyone</div>
+    <h2>The five things to know first</h2>
+    <p class="scope">True for every role, in both seasons.</p>
+
+    <div class="howto">
+      <h3>1 · The tab bar</h3>
+      <p>The buttons along the bottom are how you move around. They change with your role and the season — you only ever see the tabs you need.</p>
+    </div>
+    <div class="howto">
+      <h3>2 · The mode badge — pre-camp ↔ at-camp</h3>
+      <p>The badge in the header shows the camp's current season: <span class="ptag pre" style="font-size:.62rem">Pre-camp</span> (amber) or <span class="ptag at" style="font-size:.62rem">At camp</span> (green). In the live app an <b>admin</b> flips this once and everyone moves over on their next login. In this demo you can tap the badge yourself to preview both.</p>
+    </div>
+    <div class="howto">
+      <h3>3 · The Day badge (at camp)</h3>
+      <p>Once at camp, a <b>Day 1 / Day 2</b> badge controls day-specific screens: Day 1 shows <b>First Day Sign In</b>, Day 2 onward shows <b>Submit Testimonies</b>.</p>
+    </div>
+    <div class="howto">
+      <h3>4 · One record per person</h3>
+      <p>Everything — accommodation, payments, blue cards, check-in, notes — reads from a single registration record. No parallel spreadsheets; what you change, everyone sees.</p>
+    </div>
+    <div class="howto">
+      <h3>5 · Notices</h3>
+      <p>The <span class="tile">Notices</span> tab and your Home screen show the latest announcements. Pre-camp notices stay put; at-camp notices clear themselves a few hours after posting so the list stays current.</p>
+    </div>
+  </div>
+
+  <!-- ===== ROLE SWITCHER ===== -->
+  <div class="rolebar" id="rolebar">
+    <button class="on" data-role="church" onclick="setRole('church')">Church<span class="sub">Youth pastor</span></button>
+    <button data-role="zone" onclick="setRole('zone')">Zone Leader<span class="sub">One zone</span></button>
+    <button data-role="director" onclick="setRole('director')">Director<span class="sub">Whole camp</span></button>
+    <button data-role="admin" onclick="setRole('admin')">Admin<span class="sub">Back office</span></button>
+  </div>
+
+  <!-- ================= CHURCH ================= -->
+  <div class="roleblock on" data-role="church">
+    <div class="panel">
+      <h2>Church account</h2>
+      <div class="scope">For each church's youth pastor / leader. You see only your own church's people.</div>
+      <div class="phasetoggle"><button class="on" onclick="setPhase('church','pre')">Pre-camp</button><button onclick="setPhase('church','at')">At camp</button></div>
+
+      <!-- pre-camp -->
+      <div class="phaseblock on" data-phase="pre">
+        <div class="phaseband"><span class="ptag pre">Pre-camp</span><span class="ln"></span></div>
+
+        <div class="howto"><h3>Check your status at a glance</h3>
+          <p>The <span class="tile">Home</span> screen opens on a status band for your church.</p>
+          <ul><li><b>Campers</b> and <b>Leaders</b> registered.</li>
+          <li><b>Ldr blue card</b> — leaders 18+ still needing a working-with-children check (red until done).</li>
+          <li>Your registration progress bar and days-to-go countdown.</li></ul>
+        </div>
+        <div class="howto"><h3>Review your young people</h3>
+          <p>Open <span class="tile">My Youth</span> to see everyone you've registered.</p>
+          <ol><li>Filter by <b>gender</b> and <b>grade</b> to find a group quickly.</li>
+          <li>Read the <b>Student split</b> and <b>Leader split</b> summaries.</li>
+          <li>Accommodation shows as <b>Tent</b> or <b>Classroom</b> (exact room names are kept to the camp office).</li></ol>
+        </div>
+        <div class="howto"><h3>Share your registration code</h3>
+          <p>Your church's <b>registration code</b> appears on Home — give it to families so their sign-ups land against your church.</p>
+        </div>
+        <div class="howto"><h3>Get help</h3>
+          <p>The <span class="tile">Help</span> tab answers the common questions (FAQ). Start there before calling the office.</p>
+        </div>
+      </div>
+
+      <!-- at-camp -->
+      <div class="phaseblock" data-phase="at">
+        <div class="phaseband"><span class="ptag at">At camp</span><span class="ln"></span></div>
+
+        <div class="howto"><h3>Daily check-in</h3>
+          <ol><li>Open <span class="tile">Check-in</span>. The day picker and gender/grade filters narrow the list.</li>
+          <li>The count shows how many of the shown group aren't checked in yet.</li>
+          <li>Tap a name to mark present. There are two check-ins a day.</li></ol>
+        </div>
+        <div class="howto"><h3>Sign a youth out (and back in)</h3>
+          <p>When a young person leaves the camp site, record it — this is a safeguarding step, not just admin.</p>
+          <ol><li>Find them via <span class="tile">Search</span> or your youth list and choose <b>Sign out</b>.</li>
+          <li>Enter the leader's name, the reason, and whether a parent was met. Review the summary, then confirm.</li>
+          <li>They drop off the daily roll. When they return, <b>Sign back in</b> with your initials.</li></ol>
+          <div class="tip">Every sign-out / sign-in is logged automatically as a record leadership can review.</div>
+        </div>
+        <div class="howto"><h3>Write a student note</h3>
+          <p>Capture anything worth passing on (left dinner early, looked unwell). Notes are write-for-church, read-for-leadership — accountable records, not gossip.</p>
+        </div>
+        <div class="howto"><h3>Your accommodation</h3>
+          <p>Once the director has allocated rooms, a <b>Your Accommodation</b> tile appears on Home showing where your group is staying.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ZONE LEADER ================= -->
+  <div class="roleblock" data-role="zone">
+    <div class="panel">
+      <h2>Zone leader</h2>
+      <div class="scope">Oversees one zone (a group of churches). Everything a church can do, plus zone-wide visibility.</div>
+      <div class="phasetoggle"><button class="on" onclick="setPhase('zone','pre')">Pre-camp</button><button onclick="setPhase('zone','at')">At camp</button></div>
+
+      <div class="phaseblock on" data-phase="pre">
+        <div class="phaseband"><span class="ptag pre">Pre-camp</span><span class="ln"></span></div>
+        <div class="howto"><h3>See your whole zone</h3>
+          <p><span class="tile">Home</span> and <span class="tile">My Youth</span> roll up every church in your zone — campers, leaders, and outstanding blue cards across the zone.</p>
+        </div>
+        <div class="howto"><h3>The "By ministry" breakdown</h3>
+          <p>Home shows a per-ministry table — male/female students and leaders, with totals — scoped to your zone, so you can spot a church that's behind.</p>
+        </div>
+        <div class="howto"><h3>Send a zone notice</h3>
+          <ol><li>Open <span class="tile">Notices</span> and write your announcement.</li>
+          <li>Set the scope to your <b>zone</b>; post now or <b>schedule it for later</b>.</li>
+          <li>You can delete a notice you posted.</li></ol>
+        </div>
+      </div>
+
+      <div class="phaseblock" data-phase="at">
+        <div class="phaseband"><span class="ptag at">At camp</span><span class="ln"></span></div>
+        <div class="howto"><h3>Read notes &amp; testimonies across your zone</h3>
+          <p>You can read the student notes and records for every church in your zone — filter by <b>record type</b> (testimony / sign-out·in / student note), <b>ministry</b> and <b>zone</b>; grade and gender show for notes and records.</p>
+        </div>
+        <div class="howto"><h3>Export for follow-up</h3>
+          <p>Use the <b>CSV export</b> to take notes and testimonies away for pastoral follow-up — it includes a <b>Category</b> column.</p>
+        </div>
+        <div class="howto"><h3>Check-in, search &amp; sign-out</h3>
+          <p>All the on-the-ground tools a church has — <span class="tile">Check-in</span>, <span class="tile">Search</span>, sign-out/in — work the same for you, across your zone.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DIRECTOR ================= -->
+  <div class="roleblock" data-role="director">
+    <div class="panel">
+      <h2>Director</h2>
+      <div class="scope">Camp-wide oversight. Everything a zone leader can do, across the whole camp, plus budget and accommodation.</div>
+      <div class="phasetoggle"><button class="on" onclick="setPhase('director','pre')">Pre-camp</button><button onclick="setPhase('director','at')">At camp</button></div>
+
+      <div class="phaseblock on" data-phase="pre">
+        <div class="phaseband"><span class="ptag pre">Pre-camp</span><span class="ln"></span></div>
+        <div class="howto"><h3>The camp-wide rollup</h3>
+          <p><span class="tile">Home</span> totals every church and zone — campers, leaders, outstanding blue cards — with the by-ministry table for the whole camp.</p>
+        </div>
+        <div class="howto"><h3>Budget &amp; costings</h3>
+          <p>Open the <b>Budget &amp; costings</b> card on Home.</p>
+          <ul><li>Fee tiers: <b>tent price</b>, <b>classroom price</b>, <b>half-price voucher</b>, <b>fully sponsored</b>.</li>
+          <li>See totals and break them down per ministry.</li>
+          <li>Camp-wide tent/classroom prices are set in <b>Admin → Camp settings</b>.</li></ul>
+        </div>
+        <div class="howto"><h3>Accommodation allocations</h3>
+          <p>Open the <b>Accommodation allocations</b> card.</p>
+          <ol><li><b>Classrooms:</b> allocate eligible ministries (those with ≥75% of students in classrooms) by gender. Partial placement fills a room to capacity and leaves the remainder available; multiple ministries can share a room.</li>
+          <li><b>Tent City</b> (Male / Female) auto-distributes tent ministries into 7-person tents, keeping leaders in separate tents from students.</li>
+          <li>Un-allocating cascades sensibly — it back-fills other rooms, then returns the remainder.</li></ol>
+        </div>
+        <div class="howto"><h3>Camp-wide notices</h3>
+          <p>You can post notices to the whole camp, a zone, or a church — now or scheduled.</p>
+        </div>
+      </div>
+
+      <div class="phaseblock" data-phase="at">
+        <div class="phaseband"><span class="ptag at">At camp</span><span class="ln"></span></div>
+        <div class="howto"><h3>Everything, camp-wide</h3>
+          <p>Check-in, search, sign-out/in, and the full notes &amp; testimonies log (with CSV export) all work across every zone and church.</p>
+        </div>
+        <div class="howto"><h3>Keep the camp informed</h3>
+          <p>Send urgent or normal notices to the whole camp at a moment's notice from <span class="tile">Notices</span>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN ================= -->
+  <div class="roleblock" data-role="admin">
+    <div class="panel">
+      <h2>Admin</h2>
+      <div class="scope">Everything a director can do, plus the back-office console that sets the camp up and runs it year to year. There is always exactly one admin.</div>
+      <div class="phasetoggle"><button class="on" onclick="setPhase('admin','pre')">Pre-camp</button><button onclick="setPhase('admin','at')">At camp</button></div>
+
+      <div class="phaseblock on" data-phase="pre">
+        <div class="phaseband"><span class="ptag pre">Set-up &amp; back office</span><span class="ln"></span></div>
+        <div class="howto"><h3>The Admin console</h3>
+          <p>The <span class="tile">Admin</span> tab is your control panel — and it's identical in both seasons, so you can prepare at-camp content (schedule, devotionals) while still in pre-camp.</p>
+          <ul><li><b>Camp settings</b> — name, dates, tent/classroom prices, accommodation lock.</li>
+          <li><b>Accounts</b> — add church, zone-leader and director logins (the church name must match the registration form).</li>
+          <li><b>Accommodation</b> — define rooms and their capacity/price.</li>
+          <li><b>FAQ</b>, <b>Schedule</b> (which items are check-in points), and <b>Devotionals</b>.</li></ul>
+        </div>
+        <div class="howto"><h3>Flip the camp into at-camp mode</h3>
+          <p>When camp begins, switch the <b>mode</b> from the Admin console (or the header badge). Every login moves to at-camp on their next sign-in — nothing reinstalled, same accounts and data.</p>
+        </div>
+      </div>
+
+      <div class="phaseblock" data-phase="at">
+        <div class="phaseband"><span class="ptag at">During &amp; after camp</span><span class="ln"></span></div>
+        <div class="howto"><h3>Run the days</h3>
+          <p>You have every director and leader tool, plus live control of schedule, devotionals, FAQ and accounts if something needs changing on the fly.</p>
+        </div>
+        <div class="howto"><h3>Reuse it next year</h3>
+          <ol><li><b>Set defaults</b> — once the camp scaffold (churches, accounts, accommodation, FAQ, schedule, devotionals) is right, snapshot it as next year's baseline.</li>
+          <li>After camp, <b>Start new year</b> — purges registrants, campers, notes and notifications, then restores the baseline. The admin account and camp settings are kept.</li></ol>
+          <div class="tip">Set it up once; every following year starts from a clean, familiar scaffold.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="backrow">
+      <a href="camp-platform.html">▶ Open the app</a>
+      <a href="exec-presentation.html">Executive briefing</a>
+      <a href="index.html">All demos</a>
+    </div>
+    On iPhone: open in Safari → Share → "Add to Home Screen" to keep this guide one tap away.
+  </div>
+</div>
+
+<script>
+function setRole(r){
+  document.querySelectorAll('#rolebar button').forEach(b=>b.classList.toggle('on',b.dataset.role===r));
+  document.querySelectorAll('.roleblock').forEach(s=>s.classList.toggle('on',s.dataset.role===r));
+  window.scrollTo({top:document.getElementById('rolebar').offsetTop-12,behavior:'smooth'});
+}
+function setPhase(role,phase){
+  const block=document.querySelector('.roleblock[data-role="'+role+'"]');
+  if(!block)return;
+  const key=phase==='pre'?'pre':'at';
+  block.querySelectorAll('.phasetoggle button').forEach(b=>{
+    const isPre=b.textContent.toLowerCase().indexOf('pre')===0;
+    b.classList.toggle('on',(key==='pre')===isPre);
+  });
+  block.querySelectorAll('.phaseblock').forEach(pb=>pb.classList.toggle('on',pb.dataset.phase===key));
+}
+</script>
+</body>
+</html>
