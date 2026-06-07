@@ -62,8 +62,9 @@ h3.sec{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppe
 .pill.ok{background:#e7f7ec;color:#15803d;}.pill.warn{background:#fdecec;color:#b91c1c;}.pill.amb{background:#fef3c7;color:#92660b;}.pill.info{background:#e7efff;color:#2851a3;}
 .pills{display:flex;gap:7px;flex-wrap:wrap;}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px;}
-.tile{background:#fff;border:1px solid var(--line);border-radius:15px;padding:15px 8px;text-align:center;cursor:pointer;transition:transform .12s;box-shadow:0 3px 10px rgba(18,35,59,.05);position:relative;}
+.tile{background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px 8px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;transition:transform .12s;box-shadow:0 3px 10px rgba(18,35,59,.05);position:relative;}
 .tile:active{transform:scale(.96);}.tile .ic{font-size:1.55rem;display:block;color:var(--blue);}.tile .l{font-size:.74rem;font-weight:600;margin-top:6px;color:#334155;}
+.tile .sub{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* SVG icon system (3.1) */
 .ic-svg{width:20px;height:20px;display:inline-block;vertical-align:middle;flex:none;stroke:currentColor;}
 .tile .ic-svg{width:26px;height:26px;}
