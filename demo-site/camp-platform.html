@@ -155,6 +155,7 @@ textarea{min-height:78px;resize:vertical;}
     <div class="bk" onclick="back()">&#8249;</div>
     <div class="ttl"><div class="t" id="barT">Camp Platform</div><div class="s" id="barS"></div></div>
     <div class="mode-badge" id="modeBadge" onclick="switchMode()" style="cursor:pointer" title="Tap to switch the whole app between pre-camp and at-camp"></div>
+    <div class="mode-badge" id="dayBadge" onclick="switchDay()" style="cursor:pointer;display:none" title="Tap to switch camp day"></div>
     <div class="role-badge" id="roleBadge"></div>
     <div class="sign-out" onclick="logout()">Sign out</div>
   </header>
@@ -175,6 +176,7 @@ textarea{min-height:78px;resize:vertical;}
     <section class="screen" id="devotional"></section>
     <section class="screen" id="faq"></section>
     <section class="screen" id="notes"></section>
+    <section class="screen" id="testimonies"></section>
     <section class="screen" id="budget"></section>
     <section class="screen" id="accom"></section>
     <section class="screen" id="admin"></section>
@@ -232,7 +234,7 @@ const _MN=['Liam','Noah','Jack','Ethan','Lucas','Leo','Mason','Oliver','Hudson',
 const _FN=['Emma','Olivia','Mia','Ava','Sophie','Chloe','Grace','Ruby','Ella','Zoe','Lily','Maya','Holly','Isla','Sofia','Hannah','Abby','Jade','Anna','Tara'];
 const _LN=['Williams','Davis','Brown','Wilson','Taylor','Nguyen','Miller','Chen','Roberts','Singh','Murphy','Adams','Park','Hall','Lee','Patel','Clark','Reed','Ford','Hayes','Walsh','Tran','Khan','Ellis'];
 function _genSeed(){
-  const churches=[],registrants=[],campers=[];let r=0,p=0,mi=0,fi=0,li=0;
+  const churches=[],registrants=[],campers=[],notes=[];let r=0,p=0,mi=0,fi=0,li=0;
   _CHURCHDEFS.forEach((d,ci)=>{
     churches.push({id:d.id,name:d.name,zone:d.zone,code:d.name.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()+'00'+(ci+1),selfRegisterSlug:d.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),expectedCount:d.n+2,youthPastorName:_MN[ci%_MN.length]+' '+_LN[ci%_LN.length],contactEmail:d.id+'@campplatform.org',contacts:{male:{primary:{name:_MN[ci%_MN.length]+' '+_LN[ci%_LN.length],phone:'0411 1'+(100+ci)+' '+(200+ci)},backup:{name:'',phone:''}},female:{primary:{name:_FN[ci%_FN.length]+' '+_LN[(ci+3)%_LN.length],phone:'0422 2'+(100+ci)+' '+(300+ci)},backup:{name:'',phone:''}}}});
     for(let i=0;i<d.n;i++){
@@ -255,7 +257,11 @@ function _genSeed(){
       campers.push({id:pid,firstName:first,lastName:last,gender:male?'male':'female',grade:null,zone:d.zone,kind:'leader',churchId:d.id,churchName:d.name,mobile:'0411 1'+String(p).padStart(2,'0')+' 9'+String(p).padStart(2,'0'),medicalConditions:[],dietaryRequirements:[],consents:{medical:{granted:true,timestamp:'2025-08-01T00:00:00Z'},media:{granted:true,timestamp:'2025-08-01T00:00:00Z'},supervision:{granted:true,timestamp:'2025-08-01T00:00:00Z'}},parentGuardianName:null,parentPhone:null,atCamp:true,status:'checked_in',checkInHistory:[],signOutHistory:[]});
     }
   });
-  return {churches,registrants,campers};
+  campers.filter(c=>c.kind==='student').slice(0,3).forEach((c,i)=>{notes.push({id:'snt'+i,cat:'note',camperId:c.id,camperName:c.firstName+' '+c.lastName,authorId:'u4',authorName:'Ministry Leader',body:['Quiet at breakfast — worth checking in on.','Really coming out of their shell this year.','Has a nut allergy — kitchen notified, watching at meals.'][i],createdAt:_ago(220-i*40)});});
+  campers.filter(c=>!c.atCamp&&c.signOutHistory&&c.signOutHistory.length).slice(0,6).forEach((c,i)=>{notes.push({id:'rec'+i,cat:'record',camperId:c.id,camperName:c.firstName+' '+c.lastName,authorId:'u5',authorName:'SL',body:'Signed out, Reason: Doctor appointment',createdAt:_ago(118-i)});});
+  notes.push({id:'tm1',cat:'testimony',camperName:null,authorId:'u5',authorName:'Api T',body:'A Year 9 guy gave his life to Christ at the campfire tonight — first time he has ever prayed out loud.',createdAt:_ago(60)});
+  notes.push({id:'tm2',cat:'testimony',camperName:null,authorId:'u4',authorName:'Sarah L',body:'Our whole girls cabin reconciled after a tough year — lots of tears, lots of forgiveness.',createdAt:_ago(30)});
+  return {churches,registrants,campers,notes};
 }
 const _SEED=_genSeed();
 const _DB = {
@@ -266,7 +272,7 @@ const _DB = {
     checkInLocation:'Camp Venue — Main Gate',checkInFrom:'10:00am Sunday',
     registerBaseUrl:'https://register.youthcamp.org',
     checkInDays:['2025-09-29','2025-09-30','2025-10-01','2025-10-02'],
-    accommodationLocked:false,campMode:'pre-camp',firstDayOver:true,tentPrice:140,classroomPrice:120,
+    campMode:'pre-camp',campDay:1,tentPrice:140,classroomPrice:120,
     daysToGo:120,createdAt:'2025-01-01T00:00:00Z',updatedAt:'2025-01-01T00:00:00Z'
   },
   users:[
@@ -337,17 +343,12 @@ const _DB = {
     {id:'n5',scope:'zone',zone:'Blue',churchId:null,priority:'normal',title:'Blue zone photo at 4pm',body:'Blue zone, gather at the oval at 4pm for our group photo.',senderId:'u6',senderName:'Director',senderRole:'director',createdAt:_ago(8)},
     {id:'n6',scope:'camp',zone:null,churchId:null,priority:'normal',title:'Tonight: campfire & worship',body:'Bring a jacket — campfire and worship night kicks off at 8pm down by the lake.',senderId:'u6',senderName:'Director',senderRole:'director',scheduledFor:_ahead(40),createdAt:_ago(20)},
   ],
-  notes:[
-    {id:'nt1',camperId:'p2',camperName:'Liam Davis',body:'Liam was very quiet at breakfast, may want to check in with him.',authorId:'u4',authorName:'Victory Leader',authorChurchId:'c1',sessionId:'ci-2025-09-30',createdAt:'2025-09-30T08:30:00Z'},
-    {id:'nt2',camperId:'p3',camperName:'Olivia Brown',body:'Olivia is loving the small groups — really coming out of her shell this year.',authorId:'u4',authorName:'Victory Leader',authorChurchId:'c1',sessionId:'ci-2025-09-30',createdAt:'2025-09-30T09:05:00Z'},
-    {id:'nt3',camperId:'p5',camperName:'Jake Miller',body:'Reminder: Jake has a nut allergy — kitchen has been notified, keeping an eye at meals.',authorId:'u7',authorName:'Hope City Leader',authorChurchId:'c2',sessionId:'ci-2025-09-30',createdAt:'2025-09-30T12:20:00Z'},
-    {id:'nt4',camperId:'p6',camperName:'Sophie Chen',body:'Sophie felt homesick last night but was much better after a chat. Doing well today.',authorId:'u7',authorName:'Hope City Leader',authorChurchId:'c2',sessionId:'ci-2025-09-30',createdAt:'2025-09-30T13:10:00Z'},
-  ],
+  notes:_SEED.notes,
   tokens:{},
   nextId:1000,
 };
 /* ===== DEMO PERSISTENCE (1.10) ===== */
-const _DB_KEY='cp_demo_db_v4';
+const _DB_KEY='cp_demo_db_v5';
 (function(){try{const s=localStorage.getItem(_DB_KEY);if(s){const d=JSON.parse(s);for(const k in d){if(d[k]!=null)_DB[k]=d[k];}}}catch(e){}})();
 function _persist(){try{localStorage.setItem(_DB_KEY,JSON.stringify(_DB));}catch(e){}}
 function resetDemo(){if(!confirm('Reset the demo to its original sample data?'))return;try{localStorage.removeItem(_DB_KEY);}catch(e){}location.reload();}
@@ -483,8 +484,8 @@ async function _apiCore(path,opt={}){
     return{items:list,total:list.length,pageSize:300,page:1};
   }
   if(path.match(/\/campers\/[^/]+\/notes$/)&&method==='GET'){const id=path.split('/')[2];return _clone(_DB.notes.filter(n=>n.camperId===id));}
-  if(path.match(/\/campers\/[^/]+\/sign-out$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){c.atCamp=false;c.status='checked_out';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'out',...body,authorId:ACTOR.id,timestamp:_now()});_DB.notes.push({id:_newId(),camperId:c.id,camperName:c.firstName+' '+c.lastName,body:'Signed out, Reason: '+(body.reason||'—'),authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
-  if(path.match(/\/campers\/[^/]+\/sign-in$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){const wasOut=(c.signOutHistory||[]).some(e=>e.type==='out');c.atCamp=true;c.status='checked_in';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'in',...body,authorId:ACTOR.id,timestamp:_now()});if(!body.firstDay)_DB.notes.push({id:_newId(),camperId:c.id,camperName:c.firstName+' '+c.lastName,body:wasOut?'Signed back in':'Signed in (late arrival)',authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
+  if(path.match(/\/campers\/[^/]+\/sign-out$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){c.atCamp=false;c.status='checked_out';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'out',...body,authorId:ACTOR.id,timestamp:_now()});_DB.notes.push({id:_newId(),cat:'record',camperId:c.id,camperName:c.firstName+' '+c.lastName,body:'Signed out, Reason: '+(body.reason||'—'),authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
+  if(path.match(/\/campers\/[^/]+\/sign-in$/)&&method==='POST'){const id=path.split('/')[2];const c=_DB.campers.find(c=>c.id===id);if(c){const wasOut=(c.signOutHistory||[]).some(e=>e.type==='out');c.atCamp=true;c.status='checked_in';c.signOutHistory=c.signOutHistory||[];c.signOutHistory.push({id:_newId(),type:'in',...body,authorId:ACTOR.id,timestamp:_now()});if(!body.firstDay)_DB.notes.push({id:_newId(),cat:'record',camperId:c.id,camperName:c.firstName+' '+c.lastName,body:wasOut?'Signed back in':'Signed in (late arrival)',authorId:ACTOR.id,authorName:body.leaderName||ACTOR.displayName,createdAt:_now()});}return _clone(c||{});}
 
   // Check-in
   if(path==='/checkin/sessions'&&method==='GET'){
@@ -561,9 +562,9 @@ async function _apiCore(path,opt={}){
   if(path==='/devotional'&&method==='POST'){const existing=_DB.devotionals.findIndex(d=>d.day===body.day);const d={id:_newId(),...body,createdAt:_now(),updatedAt:_now()};if(existing>=0)_DB.devotionals[existing]=d;else _DB.devotionals.push(d);return _clone(d);}
   
   // Notes
-  if(path==='/notes'&&method==='GET'){let list=_DB.notes.map(n=>{const c=_DB.campers.find(c=>c.id===n.camperId)||{};return {..._clone(n),zone:c.zone||'',gender:c.gender||'',church:c.churchName||''};});if(ACTOR.role==='zoneLeader')list=list.filter(n=>n.zone===ACTOR.zone);return list.reverse();}
-  if(path==='/notes'&&method==='POST'){const c=_DB.campers.find(c=>c.id===body.camperId);const n={id:_newId(),...body,authorId:ACTOR.id,camperName:c?c.firstName+' '+c.lastName:'Unknown',createdAt:_now()};_DB.notes.push(n);return _clone(n);}
-  if(path==='/notes/export'&&method==='GET'){return _DB.notes.map(n=>{const c=_DB.campers.find(c=>c.id===n.camperId)||{};return{time:n.createdAt,camperName:n.camperName,loggedBy:n.authorName,church:c.churchName||'',gender:c.gender||'',grade:c.grade||'',note:n.body};});}
+  if(path==='/notes'&&method==='GET'){let list=_DB.notes.map(n=>{const c=_DB.campers.find(c=>c.id===n.camperId)||{};return {..._clone(n),zone:c.zone||'',gender:c.gender||'',grade:(c.grade!=null?c.grade:''),church:c.churchName||'',cat:n.cat||(n.camperId?'note':'testimony')};});return list.reverse();}
+  if(path==='/notes'&&method==='POST'){const c=_DB.campers.find(c=>c.id===body.camperId);const n={id:_newId(),...body,cat:body.cat||'note',authorId:ACTOR.id,camperName:body.camperId?(c?c.firstName+' '+c.lastName:'Unknown'):null,createdAt:_now()};_DB.notes.push(n);return _clone(n);}
+  if(path==='/notes/export'&&method==='GET'){return _DB.notes.map(n=>{const c=_DB.campers.find(c=>c.id===n.camperId)||{};const cat=n.cat||(n.camperId?'note':'testimony');const catL=cat==='testimony'?'Testimony':cat==='record'?'Signout/In Record':'Student Note';return{time:n.createdAt,category:catL,camperName:n.camperName||'',loggedBy:n.authorName,church:c.churchName||'',gender:c.gender||'',grade:(c.grade!=null?c.grade:''),note:n.body};});}
   
   // Admin ops
   if(path==='/admin/save-defaults'&&method==='POST'){return{churches:_DB.churches.length,users:_DB.users.filter(u=>u.role!=='admin').length};}
@@ -601,6 +602,7 @@ const sel=id=>{const e=document.getElementById(id);return e?e.value:'';};
 /* ===== SVG ICONS (3.1) ===== */
 const ICONS={
 home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+star:'<path d="M12 3l2.6 5.6 6 .8-4.4 4.1 1.1 6L12 16.8 6.7 19.5l1.1-6L3.4 9.4l6-.8Z"/>',
 check:'<path d="M20 6 9 17l-5-5"/>',
 search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
 bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
@@ -655,14 +657,19 @@ function updateModeUI(){
   if(CAMP_MODE==='at-camp'){b.innerHTML='AT CAMP <span style="opacity:.75">⇄</span>';b.style.background='#16a34a';b.style.color='#fff';}
   else{b.innerHTML='PRE-CAMP <span style="opacity:.75">⇄</span>';b.style.background='#f59e0b';b.style.color='#3a2a00';}
   if(r&&ACTOR)r.textContent=ACTOR.role==='admin'?'Admin':ACTOR.role==='director'?'Director':ACTOR.role==='zoneLeader'?'Zone·'+ACTOR.zone:'Church';
+  const db=document.getElementById('dayBadge');
+  if(db){if(CAMP_MODE==='at-camp'){db.style.display='';const day=(SETTINGS&&SETTINGS.campDay)||1;db.innerHTML='DAY '+day+' <span style="opacity:.75">⇄</span>';db.style.background='#2563eb';db.style.color='#fff';}else db.style.display='none';}
 }
+async function switchDay(){const cur=(SETTINGS&&SETTINGS.campDay)||1;const next=cur===1?2:1;
+  try{await api('/settings',{method:'PATCH',body:{campDay:next}});if(SETTINGS)SETTINGS.campDay=next;updateModeUI();
+    toast(next===1?'Day 1 — First Day Sign In':'Day '+next+' — testimonies open');STACK=['home'];await RENDER.home();}catch(e){toast(e.message);}}
 
 /* ===== ROUTER ===== */
 const TAB_OF={home:'home',codes:'home',people:'people',student:'people',help:'help',
   admin:'admin',adminAccounts:'admin',adminFaq:'admin',adminSettings:'admin',adminAccom:'admin',adminData:'admin',
   adminDevos:'admin',adminFaqEdit:'admin',adminSchedEdit:'admin',adminContacts:'admin',
   checkin:'checkin',search:'search',notifs:'notifs',compose:'notifs',
-  camper:'home',myyouth:'home',firstday:'home',schedule:'home',devotional:'home',faq:'home',notes:'home',budget:'home',accom:'home'};
+  camper:'home',myyouth:'home',firstday:'home',schedule:'home',devotional:'home',faq:'home',notes:'home',testimonies:'home',budget:'home',accom:'home'};
 
 function _showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -735,8 +742,8 @@ RENDER.home=async function renderHome(){
     const hdr=`<div style="display:grid;${gcols};align-items:end;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line)"><span></span><span style="text-align:center">Student</span><span></span><span style="text-align:center">Leader</span><span></span><span style="text-align:center">Total</span></div>`;
     const rows=h.churches.map(c=>`<div style="display:grid;${gcols};align-items:center;padding:7px 0;border-top:1px solid var(--line)">
       <span style="font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span>
-      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleStudents}</b> <b style="color:#db2777">${c.femaleStudents}</b></span><span></span>
-      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleLeaders}</b> <b style="color:#db2777">${c.femaleLeaders}</b></span><span></span>
+      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleStudents}</b><b style="color:#db2777;margin-left:9px">${c.femaleStudents}</b></span><span></span>
+      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleLeaders}</b><b style="color:#db2777;margin-left:9px">${c.femaleLeaders}</b></span><span></span>
       <span style="text-align:center;font-weight:800;color:var(--ink)">${c.total}</span>
     </div>`).join('');
     body+=`<div class="card" style="padding:8px 12px">${hdr}${rows}</div>`;
@@ -775,10 +782,10 @@ async function renderHomeAtCamp(){
   }catch(e){myAccom='To be confirmed';}}
   // Tiles: only screens NOT already on the quick bar (Daily Check-in, Search, Notices, Admin live there).
   const tiles=[];
-  const fdOver=SETTINGS&&SETTINGS.firstDayOver&&ACTOR.role==='church';
-  tiles.push(fdOver?`<div class="tile" style="opacity:.45;cursor:not-allowed" title="Day 1 only — sign in late arrivals from My Youth"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div><div class="sub" style="font-size:.62rem;margin-top:2px">Closed after day 1</div></div>`:`<div class="tile" onclick="go('firstday')"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div></div>`);
+  const day1=((SETTINGS&&SETTINGS.campDay)||1)===1;
+  tiles.push(day1?`<div class="tile" onclick="go('firstday')"><div class="ic">${ic('check')}</div><div class="l">First Day Sign In</div></div>`:`<div class="tile" onclick="go('testimonies')"><div class="ic">${ic('star')}</div><div class="l">Submit Testimonies</div></div>`);
   tiles.push(`<div class="tile" onclick="go('myyouth')"><div class="ic">${ic('users')}</div><div class="l">My Youth Details</div></div>`);
-  if(canReadNotes())tiles.push(`<div class="tile" onclick="go('notes')"><div class="ic">${ic('note')}</div><div class="l">Student Notes</div></div>`);
+  if(canReadNotes())tiles.push(`<div class="tile" onclick="go('notes')"><div class="ic">${ic('note')}</div><div class="l">Testimonies &amp; Notes</div></div>`);
   tiles.push(`<div class="tile" onclick="go('schedule')"><div class="ic">${ic('calendar')}</div><div class="l">Schedule</div></div>`);
   tiles.push(`<div class="tile" onclick="go('devotional')"><div class="ic">${ic('book')}</div><div class="l">Devotional</div></div>`);
   if(ACTOR.role==='church')tiles.push(`<div class="tile" style="cursor:default"><div class="ic">⌂</div><div class="l">Your Accommodation</div><div class="sub" style="font-size:.62rem;margin-top:2px">${esc(myAccom)}</div></div>`);
@@ -901,15 +908,13 @@ async function openPerson(id){
       <div class="kv2"><span class="k">Parent</span><span class="v">${esc(s.parentName||'—')}</span></div>`}
       ${isL?`<div class="kv2"><span class="k">Blue card (WWC)</span><span class="v">${s.blueCardCollected?'<span class="pill ok">✓ Collected</span>':'<span class="pill warn">Outstanding</span>'}</span></div>`:''}
     </div>
-    ${isL?`<div class="card"><div class="lbl" style="margin-top:0">Update readiness</div>
-      ${!s.blueCardCollected?`<button class="btn alt" onclick="markReg('${s.id}',{blueCardCollected:true})">Mark blue card collected</button>`:''}
-      ${out?`<button class="btn" onclick="remindReg('${s.id}')">Send reminder</button>`:'<p class="note-hint">All readiness items complete ✓</p>'}
+    ${isL?`<div class="card"><div class="lbl" style="margin-top:0">Blue card (WWC)</div>
+      ${s.blueCardCollected?'<p class="note-hint">Blue card collected ✓</p>':(['director','admin'].includes(ACTOR.role)?`<button class="btn alt" onclick="markReg('${s.id}',{blueCardCollected:true})">Mark blue card collected</button>`:'<p class="note-hint">Not yet collected — a director or admin can mark this.</p>')}
     </div>`:''}`;
   paint('student',body,isL?'Leader':'Camper',esc(s.churchName));
   if(STACK[STACK.length-1]!=='student')STACK.push('student');
 }
 async function markReg(id,patch){try{await api('/registrants/'+id,{method:'PATCH',body:patch});toast('Updated ✓');await openPerson(id);}catch(e){toast(e.message);}}
-async function remindReg(id){try{const r=await api('/registrants/'+id+'/remind',{method:'POST',body:{}});toast('Reminder sent to '+r.sentTo);}catch(e){toast(e.message);}}
 
 /* CODES */
 RENDER.codes=async function(){
@@ -1096,7 +1101,12 @@ async function addAlloc(roomId,key){if(!key)return;const rooms=window._accomRoom
   const place=Math.min(availN,rem);
   a[roomId]=a[roomId]||[];const ex=a[roomId].find(e=>e.key===key);if(ex)ex.n+=place;else a[roomId].push({key,n:place});
   try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();if(place<availN)toast(place+' placed · '+(availN-place)+' still to allocate elsewhere');}catch(e){toast(e.message);}}
-async function removeAlloc(roomId,key){const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));a[roomId]=(a[roomId]||[]).filter(e=>e.key!==key);try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+async function removeAlloc(roomId,key){const rooms=window._accomRooms||[];const a=JSON.parse(JSON.stringify(window._accomAlloc||{}));
+  const entry=(a[roomId]||[]).find(e=>e.key===key);if(!entry)return;
+  let freed=entry.n;a[roomId]=(a[roomId]||[]).filter(e=>e.key!==key);
+  for(const rm of rooms){if(rm.id===roomId)continue;const arr=a[rm.id];if(!arr)continue;const ex=arr.find(e=>e.key===key);if(!ex)continue;const used=arr.reduce((s,e)=>s+e.n,0);const rem=rm.capacity-used;if(rem>0&&freed>0){const add=Math.min(rem,freed);ex.n+=add;freed-=add;}}
+  try{await api('/allocations',{method:'PATCH',body:{allocations:a}});window._accomAlloc=await api('/allocations');drawAccom();}catch(e){toast(e.message);}}
+function tentDist(regs){const by={};(regs||[]).filter(r=>r.accommodationKind==='tent').forEach(r=>{const c=by[r.churchId]||(by[r.churchId]={name:r.churchName,m:{stu:0,ld:0},f:{stu:0,ld:0}});const g=r.gender==='male'?c.m:c.f;if(r.kind==='leader')g.ld++;else g.stu++;});return by;}
 function drawAccom(){
   const regs=window._accomRegs||[],rooms=window._accomRooms||[],alloc=window._accomAlloc||{};
   const by=accomChurches(regs);
@@ -1116,7 +1126,6 @@ function drawAccom(){
   }).join('');
   const out=[];
   Object.values(by).forEach(c=>{const elig=c.total>0&&c.classroom/c.total>=0.75;
-    if(c.tent>0)out.push([c.name,'Tent',c.tent,'In tents']);
     if(!elig&&c.classroom>0)out.push([c.name,'Classroom',c.classroom,'Under 75% — not allocated']);});
   availGroups.forEach(g=>out.push([g.church,g.gender,g.avail,g.avail<g.n?(g.avail+' of '+g.n+' to allocate'):'Awaiting a room']));
   const table=out.length?`<table style="width:100%;border-collapse:collapse;font-size:.82rem">
@@ -1124,9 +1133,13 @@ function drawAccom(){
     ${out.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${r[2]}</td><td><span class="sub">${esc(r[3])}</span></td></tr>`).join('')}
   </table>`:'<p class="note-hint">Everyone is allocated ✓</p>';
   const box=document.getElementById('accomBody');if(!box)return;
-  box.innerHTML=`<div class="infobox" style="font-size:.82rem">Allocate ministries with <b>≥75% of students in classroom</b> to a room, by gender. A room only fills to capacity — any overflow stays available to place in another room. Tent groups, ministries under 75%, and anyone unplaced appear below.</div>
-    <h3 class="sec">Classroom rooms</h3>${roomCards}
-    <h3 class="sec">Not in a classroom allocation</h3>${table}`;
+  const td=tentDist(regs);
+  const tentTable=(gk,label)=>{const rows=Object.values(td).filter(c=>c[gk].stu+c[gk].ld>0).map(c=>{const g=c[gk];const st=Math.ceil(g.stu/7),lt=Math.ceil(g.ld/7);return `<tr style="border-top:1px solid var(--line)"><td style="padding:6px 4px">${esc(c.name)}</td><td style="text-align:center">${g.stu}</td><td style="text-align:center">${g.ld}</td><td style="text-align:center">${st}</td><td style="text-align:center">${lt}</td></tr>`;}).join('');
+    if(!rows)return '';
+    return `<h3 class="sec">Tent City — ${label}</h3><table style="width:100%;border-collapse:collapse;font-size:.8rem"><tr style="text-align:left;color:var(--muted)"><th style="padding:6px 4px">Ministry</th><th style="text-align:center">Students</th><th style="text-align:center">Leaders</th><th style="text-align:center">Student tents</th><th style="text-align:center">Leader tents</th></tr>${rows}</table>`;};
+  box.innerHTML=`<h3 class="sec" style="margin-top:2px">Classroom rooms</h3>${roomCards}
+    <h3 class="sec">Not in a classroom allocation</h3>${table}
+    ${tentTable('m','Male')}${tentTable('f','Female')}`;
 }
 RENDER.compose=function(){
   const isDir=['director','admin'].includes(ACTOR.role);
@@ -1165,7 +1178,6 @@ async function sendNotif(){const title=document.getElementById('ntitle').value.t
 
 /* ===== FIRST DAY SIGN IN ===== */
 RENDER.firstday=async function(){
-  if(SETTINGS&&SETTINGS.firstDayOver&&ACTOR.role==='church'){paint('firstday','<div class="infobox" style="margin-top:16px">First Day Sign In is closed — day 1 is over. Sign in late arrivals from <b>My Youth Details</b>.</div>','First Day Sign In','Closed after day 1');return;}
   paint('firstday','<p class="note-hint" style="margin-top:40px;text-align:center">Loading…</p>','First Day Sign In','Select students to confirm');
   const page=await api('/campers?pageSize=300');
   window._fdAll=page.items.filter(c=>c.kind==='student');
@@ -1392,34 +1404,48 @@ RENDER.faq=async function(){
 };
 
 /* ===== NOTES ===== */
+RENDER.testimonies=async function(){
+  paint('testimonies',`<div class="infobox" style="font-size:.82rem">Share a testimony or God-moment from camp. It is saved with the other records that leaders &amp; directors review.</div>
+    <div class="card"><label>Your name (leader)</label><input class="fld" id="tmLeader" value="${esc(LAST_LEADER||'')}" placeholder="e.g. Sarah Doyle">
+    <label>Testimony</label><textarea id="tmBody" placeholder="What happened? Whose story is it? What did God do?" style="min-height:120px"></textarea>
+    <button class="btn" onclick="submitTestimony()">Submit testimony</button></div>`,'Submit Testimonies','Day 2–4');
+};
+async function submitTestimony(){const leader=val('tmLeader'),body=val('tmBody');if(!leader){toast('Add your name');return;}if(!body){toast('Write the testimony');return;}LAST_LEADER=leader;
+  try{await api('/notes',{method:'POST',body:{cat:'testimony',body,authorName:leader}});toast('Testimony submitted ✓');const t=document.getElementById('tmBody');if(t)t.value='';}catch(e){toast(e.message);}}
 RENDER.notes=async function(){
   window._notesAll=await api('/notes')||[];
+  const churches=[...new Set(window._notesAll.map(n=>n.church).filter(Boolean))].sort();
   const zonesPresent=[...new Set(window._notesAll.map(n=>n.zone).filter(Boolean))].sort();
+  const recSel=`<div><label>Record</label><select id="ntCat" onchange="drawNotes()"><option value="all">All records</option><option value="testimony">Testimony</option><option value="record">Sign-out/in</option><option value="note">Student note</option></select></div>`;
+  const minSel=`<div><label>Ministry</label><select id="ntChurch" onchange="drawNotes()"><option value="all">All ministries</option>${churches.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>`;
   const zoneSel=`<div><label>Zone</label><select id="ntZone" onchange="drawNotes()"><option value="all">All zones</option>${zonesPresent.map(z=>`<option value="${z}">${z} Zone</option>`).join('')}</select></div>`;
-  const genSel=`<div><label>Gender</label><select id="ntGender" onchange="drawNotes()"><option value="all">All</option><option value="male">Guys</option><option value="female">Girls</option></select></div>`;
-  paint('notes',`<button class="btn alt" onclick="exportNotes()">↓ Export notes (CSV)</button>
-    <div class="selrow">${genSel}${zoneSel}</div>
-    <div id="notesList"></div>`,'Student Notes','Recent · your scope');
+  paint('notes',`<button class="btn alt" onclick="exportNotes()">↓ Export (CSV)</button>
+    <div class="selrow">${recSel}${minSel}</div><div class="selrow">${zoneSel}</div>
+    <div id="notesList"></div>`,'Testimonies & Student Notes','All zones · whole camp');
   drawNotes();
 };
 function drawNotes(){
   let list=window._notesAll||[];
-  const g=sel('ntGender')||'all',z=sel('ntZone')||'all';
-  if(g!=='all')list=list.filter(n=>n.gender===g);
+  const cat=sel('ntCat')||'all',ch=sel('ntChurch')||'all',z=sel('ntZone')||'all';
+  if(cat!=='all')list=list.filter(n=>(n.cat||'note')===cat);
+  if(ch!=='all')list=list.filter(n=>n.church===ch);
   if(z!=='all')list=list.filter(n=>n.zone===z);
   const box=document.getElementById('notesList');if(!box)return;
-  box.innerHTML=list.length?list.map(n=>`<div class="card"><div class="nm">${esc(n.camperName)}</div>
+  const badge=c=>c==='testimony'?'<span class="pill info">Testimony</span>':c==='record'?'<span class="pill amb">Sign-out/in</span>':'<span class="pill ok">Student note</span>';
+  box.innerHTML=list.length?list.map(n=>{const c=n.cat||'note';const isT=c==='testimony';
+    const right=(!isT&&n.gender)?`<span class="sub" style="white-space:nowrap">${n.gender==='male'?'♂':'♀'} · Yr ${n.grade||'—'}</span>`:'';
+    return `<div class="card"><div class="rowsb" style="align-items:center"><div class="nm">${isT?'Testimony':esc(n.camperName||'—')}</div>${right}</div>
     <div style="font-size:.86rem;color:#475569;margin:4px 0">${esc(n.body)}</div>
-    <div class="sub">${esc(n.authorName)} · ${dtFmt(n.createdAt)}${n.zone?' · '+esc(n.zone)+' Zone':''}</div></div>`).join(''):'<p class="note-hint">No notes match these filters.</p>';
+    <div class="sub">${esc(n.authorName)} · ${dtFmt(n.createdAt)}${n.church?' · '+esc(n.church):''} · ${badge(c)}</div></div>`;}).join(''):'<p class="note-hint">No records match these filters.</p>';
 }
 async function exportNotes(){
-  try{const rows=await api('/notes/export');if(!rows.length){toast('No notes to export');return;}
-    const headers=['Time','Student','Logged by','Church','Gender','Grade','Note'];
+  try{const rows=await api('/notes/export');if(!rows.length){toast('Nothing to export');return;}
+    const headers=['Time','Category','Student','Logged by','Church','Gender','Grade','Note'];
     const csvCell=v=>{const s=String(v??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
-    const csv=[headers.join(','),...rows.map(r=>[new Date(r.time).toLocaleString(),r.camperName,r.loggedBy,r.church,r.gender,r.grade,r.note].map(csvCell).join(','))].join('\r\n');
+    const csv=[headers.join(','),...rows.map(r=>[new Date(r.time).toLocaleString(),r.category,r.camperName,r.loggedBy,r.church,r.gender,r.grade,r.note].map(csvCell).join(','))].join('\r\n');
     const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');
-    a.href=url;a.download='student-notes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    toast('Exported '+rows.length+' notes');
+    a.href=url;a.download='testimonies-and-notes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    toast('Exported '+rows.length+' records');
   }catch(e){toast(e.message);}}
 
 /* ===== ADMIN CONSOLE ===== */
@@ -1528,15 +1554,14 @@ async function saveChurch(id){
 
 /* ===== ADMIN ACCOMMODATION ===== */
 RENDER.adminAccom=async function(){
-  const [blocks,rooms,settings]=await Promise.all([api('/accommodation/blocks'),api('/classrooms'),api('/settings')]);
+  const [blocks,rooms]=await Promise.all([api('/accommodation/blocks'),api('/classrooms')]);
   window._adminTents=blocks.filter(b=>b.kind==='tent');window._adminRooms=rooms;
-  const lockWarn=settings.accommodationLocked?`<div class="warnbox">Accommodation is locked. Only admins can edit. Unlock in Camp settings.</div>`:'';
   const tentInputs=window._adminTents.map(b=>`<div style="flex:1"><label style="font-size:.62rem">△ ${esc(b.name)} capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}"></div>`).join('');
   const roomRows=rooms.map(rm=>`<div class="card" style="padding:8px 10px;display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">
     <div style="flex:2"><label style="font-size:.62rem">Room name</label><input class="fld" id="rn_${rm.id}" value="${esc(rm.name)}"></div>
     <button class="btn red sm" style="margin-bottom:1px" onclick="delRoom('${rm.id}')">Delete</button>
     <div style="flex:1"><label style="font-size:.62rem">Capacity</label><input class="fld" id="rc_${rm.id}" value="${rm.capacity}"></div></div>`).join('');
-  paint('adminAccom',`${lockWarn}<div class="infobox">Camp-wide prices are in <b>Camp settings</b>. These classroom rooms are the same rooms used on the Accommodation allocations page.</div>
+  paint('adminAccom',`<div class="infobox">Camp-wide prices are in <b>Camp settings</b>. These classroom rooms are the same rooms used on the Accommodation allocations page.</div>
     <button class="btn" onclick="saveAllRooms()">Save all</button>
     <h3 class="sec">Tents</h3><div class="card" style="display:flex;gap:8px">${tentInputs||'<span class="sub">No tent space.</span>'}</div>
     <h3 class="sec">Classroom rooms</h3>${roomRows||'<p class="note-hint">No rooms yet.</p>'}
@@ -1595,18 +1620,13 @@ RENDER.adminSettings=async function(){
     <div class="h3">Camp-wide pricing</div>
     <div style="display:flex;gap:6px"><div style="flex:1"><label>△ Tent price ($/person)</label><input class="fld" id="stTent" value="${esc(s.tentPrice??140)}"></div>
     <div style="flex:1"><label>⌂ Classroom price ($/person)</label><input class="fld" id="stClass" value="${esc(s.classroomPrice??120)}"></div></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-      <input type="checkbox" id="stLocked" ${s.accommodationLocked?'checked':''} style="width:auto">
-      <span style="font-size:.88rem;font-weight:600;color:var(--ink)">Lock accommodation (at-camp only)</span>
-    </div>
     <button class="btn" onclick="saveSettings()">Save camp settings</button>
     <p class="note-hint">Changing check-in days updates the daily check-in automatically.</p></div>`,'Camp settings','Dates &amp; details');
 };
 async function saveSettings(){
   try{
     const days=document.getElementById('stDays').value.split(',').map(x=>x.trim()).filter(Boolean);
-    const locked=document.getElementById('stLocked').checked;
-    await api('/settings',{method:'PATCH',body:{campName:val('stName'),year:Number(val('stYear'))||new Date().getFullYear(),startDate:val('stStart'),endDate:val('stEnd'),timezone:val('stTz'),checkInLocation:val('stLoc'),checkInFrom:val('stFrom'),registerBaseUrl:val('stUrl'),checkInDays:days,accommodationLocked:locked,tentPrice:Number(val('stTent'))||0,classroomPrice:Number(val('stClass'))||0}});
+    await api('/settings',{method:'PATCH',body:{campName:val('stName'),year:Number(val('stYear'))||new Date().getFullYear(),startDate:val('stStart'),endDate:val('stEnd'),timezone:val('stTz'),checkInLocation:val('stLoc'),checkInFrom:val('stFrom'),registerBaseUrl:val('stUrl'),checkInDays:days,tentPrice:Number(val('stTent'))||0,classroomPrice:Number(val('stClass'))||0}});
     SETTINGS=await api('/settings');SESSIONS=[];SEL_SESSION=null;SCHED_DAY=null;DEVO_DAY=null;
     toast('Settings saved ✓');
   }catch(e){toast(e.message);}
