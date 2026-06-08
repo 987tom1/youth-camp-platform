@@ -62,6 +62,41 @@ a.link{color:#cfe0ff;font-weight:700;text-decoration:none;border-bottom:1px soli
 .dark .stop span{color:#9fb6d6;}.dark .stop.lit span{color:#eaf1fb;}
 .dark .rconn{background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 7px,transparent 7px 12px);}
 
+/* ===== visibility: imports + funnel ===== */
+.vcols{display:grid;grid-template-columns:.92fr auto 1.08fr;gap:clamp(12px,2.2vw,26px);align-items:center;margin-top:8px;}
+@media(max-width:760px){.vcols{grid-template-columns:1fr;}}
+.lbl{font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+.imports{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.imports li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-weight:600;font-size:clamp(.82rem,1.25vw,1rem);box-shadow:0 6px 16px rgba(12,26,48,.05);}
+.imports li::before{content:none;}
+.imports .n{flex:none;width:21px;height:21px;border-radius:6px;background:#dcf5f1;color:#0b6e64;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.imports .ext{margin-left:auto;font-size:.62rem;color:var(--muted);font-weight:700;background:#eef2f8;border-radius:5px;padding:2px 6px;}
+.vmid{align-self:center;color:var(--teal);font-weight:800;font-size:1.6rem;text-align:center;}
+@media(max-width:760px){.vmid{transform:rotate(90deg);margin:2px 0;}}
+.funnel{display:flex;flex-direction:column;gap:5px;align-items:center;}
+.rung{width:var(--w);min-width:96px;color:#fff;border-radius:10px;padding:7px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:clamp(.78rem,1.2vw,.98rem);box-shadow:0 7px 16px rgba(12,26,48,.12);}
+.rung b{font-weight:700;white-space:nowrap;}.rung span{font-weight:800;font-variant-numeric:tabular-nums;}
+.fcap{margin-top:9px;font-size:.78rem;color:var(--muted);max-width:60ch;}
+
+/* ===== at-risk phone render (faithful mock of the allocation app page) ===== */
+.scr{background:#f6f8fb;border-radius:18px;overflow:hidden;color:#0f2238;}
+.scr-top{background:#fff;border-bottom:1px solid #e7ecf3;padding:9px 11px 8px;}
+.scr-top h4{font-size:11px;font-weight:800;letter-spacing:-.01em;line-height:1.15;}
+.scr-top p{font-size:7.5px;color:#7a8aa0;margin-top:2px;line-height:1.3;}
+.scr-chips{display:flex;gap:4px;padding:8px 11px 2px;overflow:hidden;}
+.scr-chips i{font-style:normal;font-size:7.5px;font-weight:700;border-radius:999px;padding:3px 7px;background:#fff;border:1px solid #e0e6ef;color:#5b6b80;white-space:nowrap;}
+.scr-chips i.on{background:#2563eb;border-color:#2563eb;color:#fff;}
+.scr-grp{padding:6px 11px 0;}
+.scr-grp:last-child{padding-bottom:11px;}
+.scr-grp h5{font-size:8px;font-weight:700;color:#5b6b80;margin-bottom:4px;}
+.scr-row{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #eaeef4;border-radius:8px;padding:5px 7px;margin-bottom:4px;}
+.scr-row .nm{flex:1;min-width:0;}
+.scr-row .nm b{font-size:8.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scr-row .nm span{font-size:7px;color:#8a98ab;}
+.scr-row .bd{font-size:7px;font-weight:700;border-radius:4px;padding:2px 5px;white-space:nowrap;}
+.bd.stop{background:#fee2e2;color:#b91c1c;}.bd.risk{background:#ffedd5;color:#c2410c;}.bd.dec{background:#fef9c3;color:#a16207;}
+.scr-row .at{font-size:7.5px;color:#5b6b80;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+
 /* chrome */
 .bar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.14);z-index:50;}
 .bar>i{display:block;height:100%;background:var(--blue);transition:width .3s;}
@@ -117,7 +152,19 @@ a.link{color:#cfe0ff;font-weight:700;text-decoration:none;border-bottom:1px soli
     <h2>Cloud allocation app</h2>
     <p class="sub">Allocate young people to leaders, see coverage at a glance, and let attendance do the watching for you — so nothing slips between Sundays.</p>
     <div class="feat">
-      <div class="shot"><img src="assets/lp-home.png" alt=""></div>
+      <div class="shot"><div class="scr">
+        <div class="scr-top"><h4>Service At-Risk Students</h4><p>Previously regular (≥5/8 a term) — now dropped off.</p></div>
+        <div class="scr-chips"><i class="on">All</i><i>7–9 Girls</i><i>7–9 Guys</i><i>10–12 Girls</i></div>
+        <div class="scr-grp"><h5>Grade 7 · 3</h5>
+          <div class="scr-row"><div class="nm"><b>Mia Thompson</b><span>Female · 0431…</span></div><span class="bd risk">At Risk</span><span class="at">2/8<br>was 6/8</span></div>
+          <div class="scr-row"><div class="nm"><b>Jack Wilson</b><span>Male · 0422…</span></div><span class="bd stop">Stopped</span><span class="at">0/8<br>was 7/8</span></div>
+          <div class="scr-row"><div class="nm"><b>Ava Chen</b><span>Female · 0408…</span></div><span class="bd dec">Declining</span><span class="at">3/8<br>was 5/8</span></div>
+        </div>
+        <div class="scr-grp"><h5>Grade 9 · 2</h5>
+          <div class="scr-row"><div class="nm"><b>Noah Davis</b><span>Male · 0455…</span></div><span class="bd stop">Stopped</span><span class="at">1/9<br>was 6/8</span></div>
+          <div class="scr-row"><div class="nm"><b>Ella Brown</b><span>Female · 0417…</span></div><span class="bd risk">At Risk</span><span class="at">2/9<br>was 7/9</span></div>
+        </div>
+      </div></div>
       <ul>
         <li>Allocate youth ↔ leaders by grade; every student has someone.</li>
         <li>"My Youth" — each leader sees their people and their gaps.</li>
@@ -151,15 +198,30 @@ a.link{color:#cfe0ff;font-weight:700;text-decoration:none;border-bottom:1px soli
   <section class="slide">
     <span class="eyebrow term">02 · Each term · the tool</span>
     <h2>Visibility tool</h2>
-    <p class="sub">Drop in your exports and get a periodic SWOT in minutes — one offline file, nothing installed, nothing leaves your laptop.</p>
-    <div class="feat">
-      <div style="flex:none;font-size:clamp(3rem,9vw,6rem);line-height:1">📊</div>
-      <ul>
-        <li>Merges five CSV exports into one <b>integration ladder</b> — first visit → fully belonging.</li>
-        <li>Flags <b>Rising</b> and <b>Declining</b> connection — who to celebrate, who to chase.</li>
-        <li>One tap builds an executive presentation deck — your SWOT, ready to share.</li>
-        <li>Runs entirely in the browser; sensitive data never leaves the device.</li>
-      </ul>
+    <p class="sub">Drop in five exports and get a periodic SWOT in minutes — it stitches them into one integration ladder, then flags who's <b>Rising</b>, who's <b>Declining</b>, and builds your executive deck in one tap.</p>
+    <div class="vcols">
+      <div>
+        <div class="lbl">The five exports you drop in</div>
+        <ol class="imports">
+          <li><span class="n">1</span> New Connect <span class="ext">CSV</span></li>
+          <li><span class="n">2</span> Decision <span class="ext">CSV</span></li>
+          <li><span class="n">3</span> Service (Friday) <span class="ext">CSV</span></li>
+          <li><span class="n">4</span> Student Team <span class="ext">CSV</span></li>
+          <li><span class="n">5</span> Lifegroups <span class="ext">CSV</span></li>
+        </ol>
+      </div>
+      <div class="vmid">→</div>
+      <div>
+        <div class="lbl">→ One integration ladder</div>
+        <div class="funnel">
+          <div class="rung" style="--w:100%;background:#2563eb"><b>First contact</b><span>284</span></div>
+          <div class="rung" style="--w:80%;background:#2f7fc0"><b>Occasional attendee</b><span>196</span></div>
+          <div class="rung" style="--w:60%;background:#2497a6"><b>Regular attendee</b><span>121</span></div>
+          <div class="rung" style="--w:41%;background:#15a589"><b>Lifegroup attendee</b><span>63</span></div>
+          <div class="rung" style="--w:24%;background:#16a34a"><b>Student Team</b><span>21</span></div>
+        </div>
+        <div class="fcap">Representative shape — the biggest drop-offs are where to focus.</div>
+      </div>
     </div>
     <div class="pillrow"><span class="pill off">○ Offline — single self-contained file</span><span class="pill">Periodic SWOT &amp; visibility</span></div>
     <div class="rail">
