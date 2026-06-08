@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1a30">
+<title>Youth Society Brisbane — Executive Briefing</title>
+<style>
+:root{--navy:#0c1a30;--navy2:#12233b;--blue:#2563eb;--sky:#9cc0ff;--paper:#f5f8fc;--ink:#0f2238;--muted:#5b6b80;--line:#e3e9f2;--green:#16a34a;--teal:#0d9488;--amber:#b45309;--rose:#b91c1c;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#0a1322;overflow:hidden;}
+.deck{position:relative;width:100vw;height:100dvh;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:clamp(24px,4.5vw,76px);background:var(--paper);overflow:auto;}
+.slide.on{display:flex;animation:fade .4s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.kicker{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--blue);margin-bottom:12px;}
+h1{font-size:clamp(2rem,5.4vw,4.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:800;}
+h2{font-size:clamp(1.4rem,3.4vw,2.6rem);line-height:1.1;letter-spacing:-.02em;font-weight:800;margin-bottom:6px;}
+.lead{font-size:clamp(1rem,1.6vw,1.3rem);color:var(--muted);max-width:60ch;margin-top:12px;}
+.sub{color:var(--muted);font-size:clamp(.95rem,1.4vw,1.15rem);max-width:64ch;margin-bottom:14px;}
+.dark{background:radial-gradient(120% 130% at 12% 0%,#21508f,#0c1a30);color:#fff;}
+.dark .lead{color:#cfe0ff;}.dark .kicker{color:var(--sky);}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:24px;}
+.chip{font-size:.78rem;font-weight:700;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#e7eefb;border-radius:999px;padding:8px 14px;}
+ul{list-style:none;}li{position:relative;padding-left:26px;margin-bottom:10px;font-size:clamp(.92rem,1.35vw,1.1rem);}
+li::before{content:"▸";position:absolute;left:2px;color:var(--blue);font-weight:900;}
+.eyebrow{display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:6px 13px;margin-bottom:12px;}
+.eyebrow.week{background:#e7efff;color:#2851a3;}.eyebrow.term{background:#dcf5f1;color:#0b6e64;}.eyebrow.year{background:#fef3e2;color:#b45309;}
+.feat{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,40px);align-items:center;margin-top:6px;}
+@media(max-width:820px){.feat{grid-template-columns:1fr;}}
+.shot{width:clamp(150px,22vw,230px);background:#0b1220;border-radius:24px;padding:7px;box-shadow:0 20px 44px rgba(0,0,0,.32);flex:none;}
+.shot img{display:block;width:100%;border-radius:18px;}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.pill{font-size:.74rem;font-weight:700;border-radius:999px;padding:6px 12px;background:#fff;border:1px solid var(--line);color:var(--ink);}
+.pill.live{background:#eafaef;border-color:#c7e8d2;color:#15803d;}
+.pill.off{background:#eef2f8;border-color:var(--line);color:var(--muted);}
+.ask{margin-top:24px;display:inline-block;background:var(--blue);color:#fff;border-radius:14px;padding:14px 22px;font-weight:800;font-size:clamp(1rem,1.6vw,1.3rem);}
+a.link{color:#cfe0ff;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(207,224,255,.4);}
+.statband{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:0 10px 24px rgba(12,26,48,.07);min-width:108px;}
+.stat b{display:block;font-size:clamp(1.4rem,3vw,2.2rem);letter-spacing:-.02em;color:var(--navy2);line-height:1;}
+.stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+
+/* ===== rhythm rail ===== */
+.rail{display:flex;align-items:stretch;gap:0;margin-top:22px;width:100%;}
+.rail.hero{margin-top:30px;}
+.stop{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:6px 4px;opacity:.38;transition:opacity .4s;}
+.stop.lit{opacity:1;}
+.rdot{width:clamp(38px,5vw,54px);height:clamp(38px,5vw,54px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;background:#fff;border:2px solid var(--line);color:var(--muted);box-shadow:0 8px 18px rgba(12,26,48,.08);}
+.stop.lit .rdot{color:#fff;border-color:transparent;box-shadow:0 12px 26px rgba(12,26,48,.22);}
+.stop.week.lit .rdot{background:var(--blue);}
+.stop.term.lit .rdot{background:var(--teal);}
+.stop.year.lit .rdot{background:var(--amber);}
+.stop b{font-size:clamp(.92rem,1.5vw,1.25rem);letter-spacing:-.01em;}
+.stop span{font-size:.74rem;color:var(--muted);font-weight:600;}
+.stop.lit span{color:var(--ink);}
+.rconn{flex:none;align-self:flex-start;width:clamp(20px,5vw,70px);height:3px;margin-top:clamp(18px,2.5vw,26px);background:repeating-linear-gradient(90deg,var(--line) 0 7px,transparent 7px 12px);}
+.rail.hero .rdot{width:clamp(52px,7vw,76px);height:clamp(52px,7vw,76px);font-size:1.1rem;}
+.rail.hero .rconn{margin-top:clamp(25px,3.5vw,37px);}
+.dark .rdot{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#cfe0ff;}
+.dark .stop span{color:#9fb6d6;}.dark .stop.lit span{color:#eaf1fb;}
+.dark .rconn{background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 7px,transparent 7px 12px);}
+
+/* chrome */
+.bar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.14);z-index:50;}
+.bar>i{display:block;height:100%;background:var(--blue);transition:width .3s;}
+.nav{position:fixed;top:50%;transform:translateY(-50%);z-index:50;background:rgba(255,255,255,.14);color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:1.3rem;cursor:pointer;}
+.nav.prev{left:14px;}.nav.next{right:14px;}
+.dots{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:7px;}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;}.dot.on{background:var(--blue);transform:scale(1.3);}
+.hud{position:fixed;bottom:14px;right:18px;z-index:50;color:#8aa0bd;font-size:.76rem;}
+@media(max-width:680px){.nav{display:none;}}
+</style>
+</head>
+<body>
+<div class="bar"><i id="bar"></i></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · TITLE -->
+  <section class="slide on dark">
+    <div class="kicker">Youth Society Brisbane · Digital Tooling</div>
+    <h1>Your week.<br>Your term.<br>Your year.</h1>
+    <p class="lead">One connected toolkit, built around the real rhythm of the ministry — the leaders you run every week, the picture you step back to read each term, and the camp that takes the whole year.</p>
+    <div class="chips"><span class="chip">Three tools, one toolkit</span><span class="chip">Built &amp; working today</span><span class="chip">From your own data</span><span class="chip">Already extends beyond us</span></div>
+  </section>
+
+  <!-- 2 · THE RHYTHM -->
+  <section class="slide">
+    <div class="kicker">The shape of it</div>
+    <h2>Ministry runs on a rhythm.</h2>
+    <p class="sub">Three cadences, each with its own job to do. There's a tool for each — and together they're one connected picture. We'll build it up one beat at a time.</p>
+    <div class="rail hero">
+      <div class="stop week"><span class="rdot">01</span><b>Weekly</b><span>Run the leaders</span></div>
+      <div class="rconn"></div>
+      <div class="stop term"><span class="rdot">02</span><b>Each term</b><span>Read the picture</span></div>
+      <div class="rconn"></div>
+      <div class="stop year"><span class="rdot">03</span><b>Each year</b><span>Run the camp</span></div>
+    </div>
+  </section>
+
+  <!-- 3 · ACT 1 NEED -->
+  <section class="slide">
+    <span class="eyebrow week">01 · Weekly</span>
+    <h2>Who's got eyes on whom — this week?</h2>
+    <p class="sub">Every week the same questions: who's leading which young people, who slipped through, who hasn't been seen in a while. Answered today in someone's head, a group chat, and a spreadsheet that's already out of date.</p>
+    <ul>
+      <li>Coverage is invisible — easy for a student to belong to no one.</li>
+      <li>"At-risk" only surfaces once someone's already gone.</li>
+      <li>Every leader keeps their own list; nothing lines up.</li>
+    </ul>
+  </section>
+
+  <!-- 4 · ACT 1 TOOL -->
+  <section class="slide">
+    <span class="eyebrow week">01 · Weekly · the tool</span>
+    <h2>Cloud allocation app</h2>
+    <p class="sub">Allocate young people to leaders, see coverage at a glance, and let attendance do the watching for you — so nothing slips between Sundays.</p>
+    <div class="feat">
+      <div class="shot"><img src="assets/lp-home.png" alt=""></div>
+      <ul>
+        <li>Allocate youth ↔ leaders by grade; every student has someone.</li>
+        <li>"My Youth" — each leader sees their people and their gaps.</li>
+        <li>Attendance analytics underneath: overview, trends, <b>at-risk</b>, search.</li>
+        <li>Export to Excel for planning and follow-up.</li>
+      </ul>
+    </div>
+    <div class="pillrow"><span class="pill live">● Live — youth-allocation-app.vercel.app</span><span class="pill">Role logins: leader · grade leader · admin</span></div>
+    <div class="rail">
+      <div class="stop week lit"><span class="rdot">01</span><b>Weekly</b><span>Allocation</span></div>
+      <div class="rconn"></div>
+      <div class="stop term"><span class="rdot">02</span><b>Each term</b><span>Visibility</span></div>
+      <div class="rconn"></div>
+      <div class="stop year"><span class="rdot">03</span><b>Each year</b><span>Camp</span></div>
+    </div>
+  </section>
+
+  <!-- 5 · ACT 2 NEED -->
+  <section class="slide">
+    <span class="eyebrow term">02 · Each term</span>
+    <h2>Step back — where are we actually tracking?</h2>
+    <p class="sub">Week-to-week keeps the ship moving; every so often you need to climb the mast. A clear, honest read of the ministry — strengths, soft spots, who's drawing closer and who's drifting — to lead from.</p>
+    <ul>
+      <li>The data exists, scattered across five different exports.</li>
+      <li>No one view of a person's journey from first visit to belonging.</li>
+      <li>Building that picture by hand eats a day you don't have.</li>
+    </ul>
+  </section>
+
+  <!-- 6 · ACT 2 TOOL -->
+  <section class="slide">
+    <span class="eyebrow term">02 · Each term · the tool</span>
+    <h2>Visibility tool</h2>
+    <p class="sub">Drop in your exports and get a periodic SWOT in minutes — one offline file, nothing installed, nothing leaves your laptop.</p>
+    <div class="feat">
+      <div style="flex:none;font-size:clamp(3rem,9vw,6rem);line-height:1">📊</div>
+      <ul>
+        <li>Merges five CSV exports into one <b>integration ladder</b> — first visit → fully belonging.</li>
+        <li>Flags <b>Rising</b> and <b>Declining</b> connection — who to celebrate, who to chase.</li>
+        <li>One tap builds an executive presentation deck — your SWOT, ready to share.</li>
+        <li>Runs entirely in the browser; sensitive data never leaves the device.</li>
+      </ul>
+    </div>
+    <div class="pillrow"><span class="pill off">○ Offline — single self-contained file</span><span class="pill">Periodic SWOT &amp; visibility</span></div>
+    <div class="rail">
+      <div class="stop week lit"><span class="rdot">01</span><b>Weekly</b><span>Allocation</span></div>
+      <div class="rconn"></div>
+      <div class="stop term lit"><span class="rdot">02</span><b>Each term</b><span>Visibility</span></div>
+      <div class="rconn"></div>
+      <div class="stop year"><span class="rdot">03</span><b>Each year</b><span>Camp</span></div>
+    </div>
+  </section>
+
+  <!-- 7 · ACT 3 NEED -->
+  <section class="slide">
+    <span class="eyebrow year">03 · Each year</span>
+    <h2>And then there's camp.</h2>
+    <div class="statband">
+      <div class="stat"><b>~1,000</b><span>students</span></div>
+      <div class="stat"><b>~23</b><span>churches</span></div>
+      <div class="stat"><b>4</b><span>days</span></div>
+      <div class="stat"><b>1</b><span>shared record</span></div>
+    </div>
+    <p class="sub" style="margin-top:18px">The single biggest operation of the year — months of sign-ups, payments and blue cards, then four days on the ground where everything has to just work. Today: a stack of shared spreadsheets and a lot of crossed fingers.</p>
+  </section>
+
+  <!-- 8 · ACT 3 TOOL -->
+  <section class="slide">
+    <span class="eyebrow year">03 · Each year · the tool</span>
+    <h2>Camp tool</h2>
+    <p class="sub">One phone-first app the whole camp runs on — it changes with the season, from the sign-up months to the four days on site.</p>
+    <div class="feat">
+      <div class="shot"><img src="assets/ch-home.png" alt=""></div>
+      <ul>
+        <li><b>One app, two modes</b> — admin flips from pre-camp prep to live operations in one tap.</li>
+        <li>One record per person: registration, payments, blue cards, accommodation, check-in.</li>
+        <li>Accountable, audited <b>sign-out</b> — safeguarding built in, not bolted on.</li>
+        <li>Twice-daily check-in, notes, scoped notices — all in your pocket.</li>
+      </ul>
+    </div>
+    <div class="pillrow"><span class="pill live">● Live — yc-camp-demo.vercel.app</span><span class="pill">Pre-camp + at-camp · 4 roles</span></div>
+    <div class="rail">
+      <div class="stop week lit"><span class="rdot">01</span><b>Weekly</b><span>Allocation</span></div>
+      <div class="rconn"></div>
+      <div class="stop term lit"><span class="rdot">02</span><b>Each term</b><span>Visibility</span></div>
+      <div class="rconn"></div>
+      <div class="stop year lit"><span class="rdot">03</span><b>Each year</b><span>Camp</span></div>
+    </div>
+  </section>
+
+  <!-- 9 · CONVERGENCE -->
+  <section class="slide dark">
+    <div class="kicker">One toolkit</div>
+    <h2 style="color:#fff">Three cadences. One connected picture.</h2>
+    <p class="lead">The same young people, the same data, three jobs — run the week, read the term, run the year. Not three apps to wrangle; one toolkit that fits how the ministry already moves.</p>
+    <div class="rail hero">
+      <div class="stop week lit"><span class="rdot">01</span><b>Weekly</b><span>Allocation app</span></div>
+      <div class="rconn"></div>
+      <div class="stop term lit"><span class="rdot">02</span><b>Each term</b><span>Visibility tool</span></div>
+      <div class="rconn"></div>
+      <div class="stop year lit"><span class="rdot">03</span><b>Each year</b><span>Camp tool</span></div>
+    </div>
+  </section>
+
+  <!-- 10 · REACH ① -->
+  <section class="slide">
+    <div class="kicker">And it already extends beyond us</div>
+    <h2>Same engine, new audiences.</h2>
+    <p class="sub">The allocation app proved the model — and two working spin-offs already grew out of it.</p>
+    <div class="feat" style="margin-top:14px">
+      <div style="flex:none;font-size:clamp(3rem,9vw,6rem);line-height:1">🌱</div>
+      <div>
+        <h3 style="font-size:1.15rem;margin-bottom:4px">① Cloud youth ministry app</h3>
+        <p class="sub" style="margin-bottom:0">A simpler sibling of the allocation app — the analytics without the coverage layer — ready to hand to <b>other youth ministries</b> to use as their own. <span style="color:var(--green);font-weight:700">Live: youth-ministry-app.vercel.app</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · REACH ② -->
+  <section class="slide">
+    <div class="kicker">And it already extends beyond us</div>
+    <h2>② HTML insights — for any group.</h2>
+    <p class="sub">A generalised, single-file version of the insight engine: drop in a CSV, get the picture — with no assumption that the people are youth.</p>
+    <div class="feat" style="margin-top:8px">
+      <div style="flex:none;font-size:clamp(3rem,9vw,6rem);line-height:1">🧩</div>
+      <ul>
+        <li>Works for <b>other demographics</b> — young adults, or a different Brisbane location.</li>
+        <li>One offline HTML file — nothing to install, nothing to host.</li>
+        <li>Same merge-and-surface logic, demographic-agnostic.</li>
+      </ul>
+    </div>
+    <p class="lead" style="margin-top:8px">Two cadence tools and one event tool for us — and the same foundation already reaching past the room.</p>
+  </section>
+
+  <!-- 12 · CLOSE -->
+  <section class="slide dark">
+    <div class="kicker">Where this leaves us</div>
+    <h1 style="font-size:clamp(1.8rem,4.6vw,3.4rem)">Built, working, and yours.</h1>
+    <p class="lead">Nothing here is a mock-up. Three tools matched to the rhythm of Youth Society Brisbane — live or running offline today — with the same foundation already extending to other ministries and other groups.</p>
+    <div class="ask">One toolkit for the whole year</div>
+    <p class="lead" style="margin-top:22px;font-size:1rem">See them live: <a class="link" href="https://youth-allocation-app.vercel.app">Allocation app</a> &nbsp;·&nbsp; <a class="link" href="https://youth-ministry-app.vercel.app">Ministry app</a> &nbsp;·&nbsp; <a class="link" href="camp-platform.html">Camp app</a> &nbsp;·&nbsp; <a class="link" href="index.html">all demos</a></p>
+  </section>
+
+</div>
+<button class="nav prev" onclick="go(-1)">‹</button>
+<button class="nav next" onclick="go(1)">›</button>
+<div class="dots" id="dots"></div>
+<div class="hud" id="hud"></div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];let i=0;
+const dots=document.getElementById('dots');slides.forEach((_,n)=>{const d=document.createElement('div');d.className='dot'+(n?'':' on');d.onclick=()=>show(n);dots.appendChild(d);});
+function show(n){i=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,k)=>s.classList.toggle('on',k===i));[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));
+  document.getElementById('bar').style.width=((i+1)/slides.length*100)+'%';document.getElementById('hud').textContent=(i+1)+' / '+slides.length;}
+function go(d){show(i+d);}
+addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();go(1);}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(-1);}else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);});
+let sx=0;addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50)go(dx<0?1:-1);},{passive:true});
+addEventListener('click',e=>{if(e.target.closest('.nav,.dot,a,button'))return;const x=e.clientX/innerWidth;if(x>0.62)go(1);else if(x<0.38)go(-1);});
+show(0);
+</script>
+</body>
+</html>
