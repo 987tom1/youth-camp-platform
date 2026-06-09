@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0c1a30">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="YC Demos">
-<title>Youth Camp — App Demos</title>
+<meta name="apple-mobile-web-app-title" content="YSB Demos">
+<title>Youth Society Brisbane — App Demos</title>
 <style>
 :root{--navy:#0c1a30;--blue:#2563eb;--sky:#9cc0ff;--ink:#0f2238;--muted:#5b6b80;--line:#e3e9f2;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -30,19 +30,25 @@ h1{font-size:clamp(1.9rem,5vw,3rem);letter-spacing:-.02em;margin:8px 0 6px;color
 .logins b{color:var(--ink);}
 .note{margin-top:26px;color:#9fb6d6;font-size:.82rem;text-align:center;}
 .badge{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#e7eefb;border-radius:999px;padding:6px 12px;font-size:.74rem;font-weight:700;margin-top:18px;}
+.grouphead{display:flex;align-items:center;gap:12px;margin:34px 0 14px;}
+.grouphead .gh-ic{font-size:1.25rem;}
+.grouphead h2{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--sky);margin:0;white-space:nowrap;}
+.grouphead .gh-line{flex:1;height:1px;background:rgba(255,255,255,.16);}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="kicker">Youth Camp 2026 · Digital Tooling</div>
-  <h1>The camp platform</h1>
-  <p class="lead">A working proof of concept — it runs entirely in your browser with sample (fictional) data. Tap to open, sign in with a demo account, and explore. Add to your home screen for a full-screen app feel.</p>
+  <div class="kicker">Youth Society Brisbane · Digital Tooling</div>
+  <h1>App demos</h1>
+  <p class="lead">Two working tools for youth ministry — for each, explore the demo, the executive briefing and the training guide. Everything runs in your browser with sample (fictional) data. Tap to open and sign in with a demo account. Add to your home screen for a full-screen app feel.</p>
 
   <a class="card" href="suite-briefing.html" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;background:linear-gradient(90deg,#2563eb,#12233b);color:#fff;box-shadow:0 14px 34px rgba(0,0,0,.32)">
     <span class="ic" style="font-size:1.9rem">▶</span>
     <span style="flex:1"><span style="font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sky)">Start here</span><br><b style="font-size:1.2rem">Executive briefing</b><br><span style="font-size:.9rem;color:#cfe0ff">The full toolkit — week, term and year — built up one tool at a time.</span></span>
     <span style="font-weight:800">→</span>
   </a>
+
+  <div class="grouphead"><span class="gh-ic">⛺️</span><h2>Youth Camp Platform</h2><span class="gh-line"></span></div>
 
   <a class="card" href="exec-presentation.html" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:16px 18px">
     <span class="ic" style="font-size:1.5rem">🎪</span>
@@ -62,6 +68,29 @@ h1{font-size:clamp(1.9rem,5vw,3rem);letter-spacing:-.02em;margin:8px 0 6px;color
   <a class="card" href="training.html" style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
     <span class="ic" style="font-size:1.9rem">📘</span>
     <span style="flex:1"><span style="font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue)">Reference</span><br><b style="font-size:1.2rem">Training &amp; how-to guides</b><br><span style="font-size:.9rem;color:var(--muted)">Role-by-role walkthroughs — church, zone leader, director, admin — for using the app.</span></span>
+    <span style="font-weight:800;color:var(--blue)">→</span>
+  </a>
+
+  <div class="grouphead"><span class="gh-ic">🧮</span><h2>Youth Allocation Platform</h2><span class="gh-line"></span></div>
+
+  <a class="card" href="allocation-exec.html" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:16px 18px">
+    <span class="ic" style="font-size:1.5rem">📊</span>
+    <span style="flex:1"><b style="font-size:1.05rem">Allocation briefing</b><br><span style="font-size:.86rem;color:var(--muted)">The case for leader allocation — connecting weekly attendance to pastoral follow-up, in five minutes.</span></span>
+    <span style="font-weight:800;color:var(--blue)">→</span>
+  </a>
+
+  <a class="card" href="allocation-platform.html">
+    <span class="ic">🧮</span>
+    <div><span class="tag pre">Allocation</span> <span class="tag at">My Youth</span></div>
+    <h2>Youth Allocation Platform</h2>
+    <p>Connects attendance to pastoral action. Every leader owns a list of students; grade and quad leaders allocate youth and set their leaders; directors see coverage and gaps across every grade and gender. Upload attendance the way you already collect it — with an Excel export.</p>
+    <span class="go">Open demo →</span>
+    <div class="logins"><b>Sign in (password <code>demo1234</code>):</b><br>admin@youth.ministry · director@youth.ministry · g79@youth.ministry (quad leader, 7–9 Girls)</div>
+  </a>
+
+  <a class="card" href="allocation-training.html" style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+    <span class="ic" style="font-size:1.9rem">📘</span>
+    <span style="flex:1"><span style="font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue)">Reference</span><br><b style="font-size:1.2rem">Training &amp; how-to guides</b><br><span style="font-size:.9rem;color:var(--muted)">Role-by-role walkthroughs — leader, grade leader, director — for using the allocation app.</span></span>
     <span style="font-weight:800;color:var(--blue)">→</span>
   </a>
 

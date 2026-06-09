@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12233b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YA Training">
+<title>Youth Allocation — Training &amp; How-To</title>
+<style>
+:root{--navy:#12233b;--blue:#2563eb;--sky:#9cc0ff;--ink:#1f2937;--muted:#647488;--line:#e8edf4;--green:#16a34a;--amber:#d97706;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#eaf1fb;
+  background:radial-gradient(130% 90% at 50% 0%,#1a3a6b,#0a1322) fixed;min-height:100dvh;
+  display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;}
+.wrap{width:100%;max-width:880px;}
+a{color:inherit;}
+.kicker{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:var(--sky);}
+h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;color:#fff;}
+.lead{color:#cfe0ff;max-width:60ch;margin-bottom:16px;font-size:.96rem;}
+.badge{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#e7eefb;border-radius:999px;padding:6px 12px;font-size:.74rem;font-weight:700;margin-bottom:6px;}
+.note{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:13px 16px;font-size:.84rem;color:#d7e6ff;margin:14px 0 8px;}
+.note b{color:#fff;} .note code{background:rgba(255,255,255,.16);border-radius:6px;padding:1px 6px;font-size:.92em;}
+
+/* section panels */
+.panel{background:#fff;color:var(--ink);border-radius:20px;padding:22px;box-shadow:0 18px 40px rgba(0,0,0,.32);margin-top:18px;}
+.panel>h2{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:4px;}
+.panel>.scope{color:var(--muted);font-size:.85rem;margin-bottom:10px;}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);}
+
+/* how-to cards */
+.howto{border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-top:12px;background:#fbfcfe;}
+.howto h3{font-size:1rem;margin-bottom:6px;letter-spacing:-.01em;}
+.howto p{color:var(--muted);font-size:.9rem;}
+.howto ol,.howto ul{margin:8px 0 2px;padding-left:20px;}
+.howto li{font-size:.9rem;margin-bottom:5px;color:var(--ink);}
+.howto li::marker{color:var(--blue);font-weight:700;}
+.tip{margin-top:10px;font-size:.82rem;color:#15803d;background:#eafaef;border:1px solid #c7e8d2;border-radius:10px;padding:8px 11px;}
+.warn{margin-top:10px;font-size:.82rem;color:#92400e;background:#fffbeb;border:1px solid #fcd980;border-radius:10px;padding:8px 11px;}
+.tile{display:inline-block;font-size:.7rem;font-weight:700;color:#2851a3;background:#e7efff;border-radius:8px;padding:3px 9px;margin:0 4px 4px 0;}
+.pill{display:inline-block;font-size:.62rem;font-weight:700;border-radius:999px;padding:3px 9px;margin:0 3px 3px 0;}
+.pill.act{background:#e7f7ec;color:#15803d;}
+.pill.opt{background:#f1f5f9;color:#475569;border:1px solid var(--line);}
+.pill.risk{background:#fde2e1;color:#b91c1c;}
+
+/* priority band */
+.prioband{display:flex;align-items:center;gap:10px;margin:18px 0 2px;}
+.prioband .ln{flex:1;height:1px;background:var(--line);}
+.ptag{font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:5px 12px;}
+.ptag.active{background:#e7f7ec;color:#15803d;}
+.ptag.optional{background:#f1f5f9;color:#475569;border:1px solid var(--line);}
+.ptag.admin{background:#e7efff;color:#2851a3;}
+.ptag.import{background:#fffbeb;color:#92400e;}
+
+/* role switcher */
+.rolebar{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+.rolebar button{flex:1;min-width:130px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#eaf1fb;
+  border-radius:12px;padding:11px 10px;font-size:.86rem;font-weight:700;cursor:pointer;transition:.12s;}
+.rolebar button .sub{display:block;font-size:.68rem;font-weight:600;color:#aac4ee;margin-top:2px;}
+.rolebar button.on{background:#fff;color:var(--ink);border-color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.25);}
+.rolebar button.on .sub{color:var(--muted);}
+.roleblock{display:none;} .roleblock.on{display:block;}
+
+/* workflow step indicator */
+.steps{counter-reset:step;margin:12px 0;}
+.step{position:relative;padding-left:42px;margin-bottom:14px;}
+.step::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:.78rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;}
+.step strong{display:block;font-size:.92rem;margin-bottom:2px;}
+.step p{font-size:.86rem;color:var(--muted);}
+
+/* workflow band showing priority */
+.two-band{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;}
+@media(max-width:580px){.two-band{grid-template-columns:1fr;}}
+.band{border-radius:12px;padding:12px;}
+.band.active{background:#e7f7ec;border:1px solid #c7e8d2;}
+.band.optional{background:#f8fafc;border:1px solid var(--line);}
+.band h4{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.band.active h4{color:#15803d;}
+.band.optional h4{color:var(--muted);}
+.band p{font-size:.84rem;color:var(--ink);}
+
+.foot{margin-top:26px;text-align:center;color:#9fb6d6;font-size:.82rem;}
+.foot a{color:var(--sky);font-weight:700;text-decoration:none;border-bottom:1px solid rgba(156,192,255,.4);}
+.backrow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;}
+@media print{
+  body{background:#fff;color:#000;}
+  .rolebar,.note{display:none;}
+  .roleblock{display:block!important;}
+  .panel{box-shadow:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Youth Ministry · Allocation Platform</div>
+  <h1>Training &amp; How-To</h1>
+  <p class="lead">A practical guide to using the Youth Allocation Platform. Pick your role and follow the steps that match what you see. Keep this open on your phone during your first session.</p>
+  <div><span class="badge">Demo only · fictional students · no real personal information</span></div>
+
+  <div class="note">
+    <b>Signing in.</b> Open the app and tap a <b>Quick Login</b> button — Admin, Director, Grade login, or Quad — or type the email directly. All demo passwords are <code>demo1234</code>. The role badge in the top-right corner shows your current scope. Hover or long-press it to see a description of what you can access.
+  </div>
+
+  <!-- EVERYONE: BASICS -->
+  <div class="panel">
+    <div class="eyebrow">Start here · everyone</div>
+    <h2>Four things to know first</h2>
+    <p class="scope">These apply to every role before you dive into your specific tasks.</p>
+
+    <div class="howto">
+      <h3>1 · The bottom navigation bar</h3>
+      <p>The four icons along the bottom are your most-used sections for your role. The layout changes with your role:</p>
+      <ul style="margin-top:6px;">
+        <li><strong>Grade login:</strong> Home | My Students | Trends | At Risk</li>
+        <li><strong>Quad login:</strong> Home | Leaders &amp; Alloc | Trends | At Risk</li>
+        <li><strong>Director:</strong> Home | Leaders &amp; Alloc | Trends | At Risk</li>
+        <li><strong>Admin:</strong> Home | Leaders &amp; Alloc | Trends | At Risk</li>
+      </ul>
+      <p style="margin-top:6px;">Additional features appear as <strong>Quick Action tiles</strong> on the Home screen and in the desktop nav bar. What's available depends on your role — grade logins get Student Search; director and admin also get Import.</p>
+    </div>
+
+    <div class="howto">
+      <h3>2 · Active vs optional students</h3>
+      <p>Students are split into two tiers throughout the app:</p>
+      <div class="two-band" style="margin-top:8px;">
+        <div class="band active"><h4>⭐ Active — allocate first</h4><p>Attended <strong>2 or more</strong> combined events (services + groups) in the last 10. These students have an existing relationship and should be connected to a leader as a priority.</p></div>
+        <div class="band optional"><h4>Optional — when ready</h4><p>Attended fewer than 2 events. Still visible and allocatable, but shown at lower priority. Includes students with no attendance data yet.</p></div>
+      </div>
+      <div class="tip">The goal is to ensure every active student has a leader before moving to the optional pool.</div>
+    </div>
+
+    <div class="howto">
+      <h3>3 · The Phone View toggle</h3>
+      <p>The small button in the corner (📱 Phone View) wraps the app in a realistic phone frame — useful for training and demonstrations on a desktop. Click again to switch back to the full desktop layout.</p>
+    </div>
+
+    <div class="howto">
+      <h3>4 · Nothing is permanent in the demo</h3>
+      <p>All changes (allocations, leader edits, imports) stay in your browser session. Refreshing the page resets everything. In the live app, data persists to the server and is visible to other logins in real time.</p>
+    </div>
+  </div>
+
+  <!-- ROLE SWITCHER -->
+  <div class="rolebar" id="rolebar">
+    <button class="on" data-role="grade" onclick="setRole('grade')">Grade Login<span class="sub">e.g. grade9f@</span></button>
+    <button data-role="quad" onclick="setRole('quad')">Quad Login<span class="sub">e.g. g79@</span></button>
+    <button data-role="director" onclick="setRole('director')">Director<span class="sub">Ministry-wide</span></button>
+    <button data-role="admin" onclick="setRole('admin')">Admin<span class="sub">Back office</span></button>
+  </div>
+
+
+  <!-- ========== GRADE LOGIN ========== -->
+  <div class="roleblock on" data-role="grade">
+    <div class="panel">
+      <h2>Grade Login</h2>
+      <p class="scope">One login per year group <strong>per gender</strong> — e.g. Grade 9 Girls (<code>grade9f@</code>) and Grade 9 Boys (<code>grade9m@</code>) are separate accounts. Each login sees only their own gender cohort's students and leaders.</p>
+
+      <div class="howto">
+        <h3>Your home screen at a glance</h3>
+        <p>Your Home screen opens with an attendance hero card showing this term's picture for your cohort as a compact table — <strong>Youth</strong> (Fridays) and <strong>Groups</strong> (Lifegroups) rows, with Unique and Avg/wk columns. A <strong>Previous term</strong> comparison appears below in the same format.</p>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below the hero card: <strong>Quick Actions</strong> (Leaders &amp; Allocation, Student Search), then a compact <strong>Allocation Summary</strong> strip — Total / Allocated / Pending / At Risk — for your cohort at a glance.</p>
+        <div class="tip">Start here each session. If Pending is above zero and there are active students without a leader, that's your immediate task.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag active">Step 1 · Set up your leaders</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Adding a leader</h3>
+        <ol>
+          <li>Tap <span class="tile">Leaders &amp; Alloc</span> from Quick Actions on Home (or the desktop nav).</li>
+          <li>Tap <strong>+ Add Leader</strong> (top-right).</li>
+          <li>Enter their full name. Select a gender (female/male) — this controls which students appear in their picker.</li>
+          <li>Your grade is auto-applied; you don't need to set it manually.</li>
+          <li>Tap <strong>Add Leader</strong>. They appear as a card immediately.</li>
+        </ol>
+        <div class="tip">Add all your leaders before starting allocation — it makes the picker workflow much faster.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Editing or removing a leader</h3>
+        <ol>
+          <li>On any leader card, tap the ✏️ pencil icon to edit name, gender, or active status.</li>
+          <li>Tap the 🗑 trash icon to remove a leader — this also removes all their student assignments.</li>
+        </ol>
+        <div class="warn">Removing a leader cannot be undone via undo toast — their allocations are also cleared. Use the <strong>Active</strong> toggle instead if you just want to temporarily hide them.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag active">Step 2 · Allocate active students</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>The allocation workflow</h3>
+        <p>Tap <span class="tile">Leaders &amp; Alloc</span> from Quick Actions. Each leader in your grade appears as a card showing:</p>
+        <ul>
+          <li>A capacity fill-bar — how loaded they are relative to the target (total gender-matching students ÷ leaders in scope).</li>
+          <li>Student count vs target, plus an at-risk flag if any of their students need attention.</li>
+          <li>The first 8 assigned students with attendance % and risk status.</li>
+          <li>A <strong>+ Add Students</strong> button that opens the search picker.</li>
+        </ul>
+        <div class="tip">The fill-bar turns amber when under-loaded and red at 90%+ of target. Aim for roughly equal loading across leaders of the same gender.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Using the student picker</h3>
+        <ol>
+          <li>Tap <strong>+ Add Students</strong> on a leader card.</li>
+          <li>By default the picker shows students who match the leader's <strong>gender and grade</strong>, split into:<br>
+            — <span class="pill act">⭐ Active students</span> at the top (≥2 attendances) — allocate these first.<br>
+            — <span class="pill opt">Other students</span> below — fewer than 2 attendances, lower priority.</li>
+          <li>Use the <strong>dropdown filter</strong> to switch modes:<br>
+            — <em>Grade match (default)</em> — leader's own grade and gender.<br>
+            — <em>Fewer than 20% attendance</em> — low-attendance students, for targeted pastoral follow-up.<br>
+            — <em>Unallocated from other grades</em> — same-gender students from other years not yet assigned to anyone.</li>
+          <li>The <strong>search bar</strong> finds any same-gender student ministry-wide, regardless of grade or allocation status.</li>
+          <li>Tap <strong>+</strong> to assign. Tap <strong>Done</strong> when finished.</li>
+        </ol>
+        <div class="tip">Cross-grade allocation is supported — assigning a student from another year is fine as long as their gender matches the leader's profile.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Removing a student from a leader</h3>
+        <p>On the leader card, tap the <strong>×</strong> next to any student's name. An <strong>Undo</strong> toast appears for 5 seconds — tap it immediately if you removed someone by mistake.</p>
+      </div>
+
+      <div class="prioband"><span class="ptag optional">Step 3 · Review at-risk students</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Checking the At Risk list</h3>
+        <ol>
+          <li>Tap <span class="tile">At Risk</span> in the bottom nav.</li>
+          <li>Students are grouped by severity: <strong>Stopped Attending</strong> (most urgent), <strong>At Risk</strong>, <strong>Declining</strong>, <strong>Watch List</strong>.</li>
+          <li>Each card shows Fridays and Lifegroup attendance with a trend arrow (↑ ↓ →) comparing to last term. A student at 30% this term who was 75% last term shows a red ↓ immediately.</li>
+          <li>Tap ✏️ to manually update status if you have context the data doesn't capture (holiday, illness).</li>
+        </ol>
+        <div class="tip">At-risk students need pastoral connection most. Allocate them via the student picker — they appear in the "Other students" section but can be assigned to any leader.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag optional">Step 4 · Check attendance trends</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Viewing Trends — Fridays</h3>
+        <p>Tap <span class="tile">Trends</span> in the bottom nav. The <strong>Fridays tab</strong> shows a ministry-wide column chart, then a <strong>Grade details</strong> card with a column chart for your cohort and three summary numbers:</p>
+        <ul>
+          <li><strong>Unique attenders</strong> — how many distinct students came at least once</li>
+          <li><strong>Avg students/session</strong> — how busy each Friday is operationally</li>
+          <li><strong>Avg sessions/student</strong> — how consistently individuals are engaging</li>
+        </ul>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">A "prev term: N" line under each number shows how it compares to last term.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Viewing Trends — Lifegroups</h3>
+        <p>Tap the <strong>Lifegroups tab</strong>. You'll see an overview card, then <strong>individual lifegroup cards</strong> for your grade — one per group (Friday Group and Sunday Group). Each shows the same three numbers plus a breadth bar showing what proportion of enrolled students attended at all:</p>
+        <ul>
+          <li><strong>Avg students/session</strong> — how many typically show up each week</li>
+          <li><strong>Unique attenders</strong> — how many distinct students came at least once</li>
+          <li><strong>Avg sessions/student</strong> — how consistently each enrolled student attends</li>
+        </ul>
+        <div class="tip">If one group has significantly lower unique attenders than the other, that's worth a pastoral conversation — it may indicate a scheduling conflict or group dynamic issue.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag optional">Step 5 · Leader self-view (My Students)</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Using My Students to look up student contacts</h3>
+        <p>Tap <span class="tile">My Students</span> in the bottom nav. Select a leader from the dropdown. You'll see their allocated students with:</p>
+        <ul>
+          <li>Mobile number (tap to dial directly on phone)</li>
+          <li>Birthday and parent/guardian phone number</li>
+          <li>Attendance % for Fridays and lifegroup</li>
+          <li>Coloured attendance pips for recent Fridays — green = attended, grey = absent</li>
+        </ul>
+        <div class="tip">Share this screen with leaders before a follow-up day so they can reach their students directly. No separate contact list needed.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag optional">Step 6 · Export when done</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Exporting allocations</h3>
+        <p>On the <span class="tile">Leaders &amp; Alloc</span> page, tap <strong>⬇ Export</strong> (top right). A CSV downloads with one row per allocation: leader, grades, gender, student, grade, gender, Fridays%, at-risk status.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========== QUAD LOGIN ========== -->
+  <div class="roleblock" data-role="quad">
+    <div class="panel">
+      <h2>Quad Login</h2>
+      <p class="scope">One login per quad (e.g. Girls Yr 7–9, <code>g79@</code>). You have a read-only view of all leaders and students in your gender + age bracket. Grade logins make allocation changes; you oversee and monitor.</p>
+
+      <div class="howto">
+        <h3>Your home screen</h3>
+        <p>Home opens with a compact attendance hero card — <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows showing Unique and Avg/wk for this term, with a previous-term comparison below. Tap <strong>Grade detail</strong> to expand per-grade attendance figures broken into Youth and Groups columns.</p>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below that: Quick Actions (Student Search, My Students) then a grade-by-grade allocation progress bar showing how allocated each year is.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Leaders &amp; Allocation — your main view</h3>
+        <p>Tap <span class="tile">Leaders &amp; Alloc</span> in the bottom nav. You'll see every active leader in your quad as an allocation card, showing:</p>
+        <ul>
+          <li>Their capacity fill-bar — how many students they have vs the target for their gender group.</li>
+          <li>Assigned student count, at-risk count, and a status indicator (all clear / declining).</li>
+          <li>The first 8 assigned students with attendance % and risk chips.</li>
+        </ul>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Use the <strong>Year filter chips</strong> at the top to narrow to a specific grade in your bracket (e.g. show only Year 8 leaders). As a quad login you can view but not add or reassign students.</p>
+        <div class="tip">This is your primary weekly check — scan for leaders with many at-risk students and follow up with the relevant grade login.</div>
+      </div>
+
+      <div class="howto">
+        <h3>At Risk — your quad</h3>
+        <p>Tap <span class="tile">At Risk</span> in the bottom nav. Students in your quad are grouped by severity — Stopped, At Risk, Declining, Watch. Each card shows current and previous-term attendance with trend arrows so you can see whether a decline is new or ongoing. Use this to brief grade logins on who needs priority attention.</p>
+        <div class="tip">Year filter chips narrow to a specific grade — useful when briefing an individual grade login.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Trends — Fridays</h3>
+        <p>Tap <span class="tile">Trends</span> in the bottom nav. The <strong>Fridays tab</strong> shows a ministry-wide column chart, then a card for your quad with three summary numbers — <strong>Unique attenders · Avg students/session · Avg sessions/student</strong> — each with a prev-term comparison. Per-grade rows below show the same numbers inline.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Trends — Lifegroups</h3>
+        <p>Tap the <strong>Lifegroups tab</strong>. An overview card shows the three numbers for all enrolled students plus a breadth bar (what proportion attended at all). Per-grade rows below — tap any to expand and see individual group cards (e.g. Friday Group vs Sunday Group), each with their own three-number card and breadth bar.</p>
+        <div class="tip">Dropdowns expand in place — your scroll position is preserved so you don't jump back to the top of the page.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Student Search</h3>
+        <p>Tap <span class="tile">Student Search</span> from Quick Actions to look up any individual in your quad by name. Year filter chips narrow to a specific grade. Tap any student to see their full detail — attendance, leader assignment, and contact info.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Why you can't make allocation changes</h3>
+        <p>Quad logins are read-only for allocations. Allocation authority stays with each grade login. Contact the relevant grade login (e.g. grade9f@ for Grade 9 Girls) if a change is needed.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========== DIRECTOR ========== -->
+  <div class="roleblock" data-role="director">
+    <div class="panel">
+      <h2>Director</h2>
+      <p class="scope">Ministry-wide access. You can do everything a grade or quad login can, across all years and genders — plus importing attendance data.</p>
+
+      <div class="howto">
+        <h3>Your home screen overview</h3>
+        <p>Home opens with an attendance hero card for the whole ministry — a compact table showing <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows, with Unique and Avg/wk columns. Previous-term comparison appears below in the same format. Tap <strong>Grade detail</strong> to expand per-grade figures with separate Youth and Groups columns.</p>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below that: Quick Actions (Student Search, My Students, Import), then By Quad allocation cards and a grade-by-grade progress bar. A "Last Import" card appears if data has been uploaded this term.</p>
+        <div class="tip">Your bottom nav is Home | Leaders &amp; Alloc | Trends | At Risk. Leaders &amp; Allocation is always one tap away in the nav — no need to go via Quick Actions.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag import">Importing attendance data</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>What the import does</h3>
+        <p>The Import page accepts two types of files:</p>
+        <div class="two-band">
+          <div class="band active"><h4>Fridays CSV</h4><p>Required: <strong>first_name, last_name, gender, grade</strong>. Date columns = attended. Optional: <strong>mobile/phone, parent_phone/guardian_phone, date_of_birth/birthday</strong>.</p></div>
+          <div class="band optional"><h4>Group / Lifegroup CSV</h4><p>Same format. Optional: <strong>group_name</strong>. All optional contact columns also accepted.</p></div>
+        </div>
+        <p style="margin-top:8px;font-size:.86rem;color:var(--muted);">Each upload is <strong>incremental</strong> — new sessions stack on existing totals. Students matched by full name; new students added automatically. Contact details are updated each time they appear.</p>
+        <div class="tip">Date columns can be ISO (2025-02-07) or Excel short-dates (7-Feb, 14-Feb). The system normalises them automatically — no reformatting needed.</div>
+        <div class="tip">Sessions below 50% of the term average are flagged as outliers and excluded from trend calculations, preventing a low-turnout week (e.g. school camp) from distorting the picture.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Running an import</h3>
+        <ol>
+          <li>Tap <span class="tile">Import</span> from Quick Actions on Home.</li>
+          <li>Select the tab — <strong>Fridays</strong> or <strong>Groups</strong>.</li>
+          <li>Drag a CSV file onto the upload area, or tap to browse.</li>
+          <li>A preview shows type detected, date columns found, optional fields, and a sample row — check it looks right.</li>
+          <li>Tap <strong>Import into Demo</strong> to commit.</li>
+          <li>A success message shows students updated and sessions added.</li>
+        </ol>
+        <div class="warn">The demo simulates the import. In the live app, the full file is processed, totals updated, and at-risk status recomputed for all students in the import.</div>
+      </div>
+
+      <div class="prioband"><span class="ptag active">Managing allocation across the ministry</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Leaders &amp; Allocation — full ministry view</h3>
+        <p>Tap <span class="tile">Leaders &amp; Alloc</span> in the bottom nav. You see every active leader ministry-wide as allocation cards — the same view grade logins use, but across all grades and genders. Use the <strong>Year</strong> and <strong>Gender</strong> filter chips at the top to narrow to any cohort (e.g. Year 10 Female only). You can add leaders, assign students, and export from this single view.</p>
+        <div class="tip">The status banner at the top shows how many active students are still pending a leader — the single most important number each week.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Attendance Trends — Fridays</h3>
+        <p>Tap <span class="tile">Trends</span> then the <strong>Fridays tab</strong>. The ministry-wide column chart appears first, then collapsible quad cards. Tap any quad to expand its chart and three-number summary — <strong>Unique attenders · Avg students/session · Avg sessions/student</strong> with prev-term comparison — then tap any grade row within it for that grade's own chart and numbers. Dropdowns expand in place, preserving your scroll position.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Attendance Trends — Lifegroups</h3>
+        <p>Tap the <strong>Lifegroups tab</strong>. A ministry overview card shows the same three numbers plus a breadth bar (proportion of enrolled students who attended at all). Per-grade rows below — tap any to expand and see individual group cards (Friday Group / Sunday Group), each with their own three-number card and breadth bar, plus prev-term comparison. Tap <strong>⬇ Export</strong> for a full CSV.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Recomputing at-risk status</h3>
+        <p>After importing new data, tap <span class="tile">At Risk</span> then <strong>🔄 Recompute</strong>. This recalculates every student's status against the current thresholds. At-risk cards show previous-term attendance alongside current with trend arrows — a decline is visible in context immediately.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Exporting allocations</h3>
+        <p>On <span class="tile">Leaders &amp; Alloc</span>, tap <strong>⬇ Export</strong> for a CSV of all allocations ministry-wide — leader, grades, gender, student, grade, gender, Fridays%, at-risk status.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========== ADMIN ========== -->
+  <div class="roleblock" data-role="admin">
+    <div class="panel">
+      <h2>Admin</h2>
+      <p class="scope">Everything a director can do, plus the back-office console for accounts, settings, allocation lock, and year-rollover. There is always exactly one admin account.</p>
+
+      <div class="howto">
+        <h3>Your home screen and nav</h3>
+        <p>Identical to the director view — Home | Leaders &amp; Alloc | Trends | At Risk in the bottom nav, with Student Search, My Students, Import, and Admin console in Quick Actions. The Admin console is the only area unique to this login.</p>
+      </div>
+
+      <div class="howto">
+        <h3>The Admin console</h3>
+        <p>Tap <span class="tile">Admin</span> from Quick Actions. Four tabs:</p>
+        <ul>
+          <li><strong>Settings</strong> — ministry name, service/group labels, allocation lock date, and at-risk thresholds.</li>
+          <li><strong>Accounts</strong> — add/edit/deactivate all logins, grouped by role (Admin, Director, Quad Leaders, Grade Logins).</li>
+          <li><strong>Data</strong> — save defaults, start a new year, or run a full reset.</li>
+          <li><strong>Audit</strong> — a log of all admin actions (settings changes, resets) with timestamp and who performed them.</li>
+        </ul>
+      </div>
+
+      <div class="prioband"><span class="ptag admin">Setting up a new term</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Creating user accounts</h3>
+        <ol>
+          <li>Go to <strong>Admin → Accounts</strong>, tap <strong>+ Add Account</strong>.</li>
+          <li>Enter a display name. The email field auto-suggests a convention (e.g. <code>grade9f@youth.ministry</code> for Grade 9 Girls, <code>g79@youth.ministry</code> for Girls 7–9 quad) when you select the role and year/quad — edit if needed.</li>
+          <li>Choose the role: <strong>Grade</strong> (select year), <strong>Quad</strong> (select which quad), <strong>Director</strong>, or <strong>Admin</strong>.</li>
+          <li>Tap <strong>Create Account</strong>. Share the email and a temporary password with the login holder.</li>
+        </ol>
+        <div class="tip">Accounts are listed in groups — Grade Logins together, Quad Leaders together — so it's easy to confirm all 24 grade logins (12 years × 2 genders) exist before the term starts.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Configuring at-risk thresholds</h3>
+        <p>Go to <strong>Admin → Settings → At-Risk Thresholds</strong>. Two rates define the three status bands:</p>
+        <ul>
+          <li><strong>Regular Rate</strong> — students at or above this rate (default 3/4 = 75%) are "regular".</li>
+          <li><strong>At-Risk Rate</strong> — students below this rate (default 1/2 = 50%) are "at risk". Between the two = "declining".</li>
+        </ul>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">After changing thresholds, use <strong>Recompute</strong> on the At Risk page to reapply them to all students.</p>
+      </div>
+
+      <div class="prioband"><span class="ptag admin">End-of-term and year rollover</span><span class="ln"></span></div>
+
+      <div class="howto">
+        <h3>Saving defaults before rollover</h3>
+        <p>Go to <strong>Admin → Data → Save Defaults</strong>. This snapshots the current account list and leader profiles as the baseline for next term. Run this once the setup is right — before clearing any data.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Starting a new term / year</h3>
+        <ol>
+          <li>First, <strong>Save Defaults</strong> (see above).</li>
+          <li>Tap <strong>Start New Year</strong>. This snapshots each student's current attendance into their "previous term" fields (used for trend comparison on the At Risk screen), then zeros current-term stats and clears allocations. Students are <em>retained</em> so next term's import can update them by name match.</li>
+          <li>Import the new term's attendance CSV to repopulate attendance totals.</li>
+          <li>Grade logins then reallocate students to leaders for the new term.</li>
+        </ol>
+        <div class="tip">Because students are retained, the At Risk page shows previous-term attendance alongside the new term from the first import — making early declines visible immediately.</div>
+        <div class="warn">Start New Year cannot be undone. Save Defaults first and confirm with your team.</div>
+      </div>
+
+      <div class="howto">
+        <h3>Full Reset (use with caution)</h3>
+        <p><strong>Admin → Data → Full Reset</strong> clears everything including leaders and students. Use only to start completely fresh — e.g. setting up the platform for a completely different ministry.</p>
+      </div>
+
+      <div class="howto">
+        <h3>Reading the audit log</h3>
+        <p>Every admin action — settings changes, lock date updates, resets — is recorded in <strong>Admin → Audit</strong> with a timestamp and the account that performed it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="backrow">
+      <a href="allocation-platform.html">▶ Open the app</a>
+      <a href="allocation-exec.html">Executive briefing</a>
+    </div>
+    On iPhone: open in Safari → Share → "Add to Home Screen" to keep this guide one tap away during your session.
+  </div>
+
+</div>
+
+<script>
+function setRole(r){
+  document.querySelectorAll('#rolebar button').forEach(b=>b.classList.toggle('on',b.dataset.role===r));
+  document.querySelectorAll('.roleblock').forEach(s=>s.classList.toggle('on',s.dataset.role===r));
+  window.scrollTo({top:document.getElementById('rolebar').offsetTop-12,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

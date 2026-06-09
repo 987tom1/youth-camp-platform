@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12233b">
+<title>Youth Allocation — Executive Briefing</title>
+<style>
+:root{--navy:#12233b;--navy2:#1a3a6b;--blue:#2563eb;--sky:#9cc0ff;--paper:#f4f7fc;--ink:#1f2937;--muted:#647488;--line:#e8edf4;--green:#16a34a;--rose:#b91c1c;--amber:#d97706;--teal:#0ea5a4;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#0a1322;overflow:hidden;}
+.deck{position:relative;width:100vw;height:100dvh;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:clamp(24px,4.5vw,72px);background:var(--paper);overflow:auto;}
+.slide.on{display:flex;animation:fade .35s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* typography */
+.kicker{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--blue);margin-bottom:12px;}
+h1{font-size:clamp(2rem,5.4vw,4rem);line-height:1.03;letter-spacing:-.03em;font-weight:800;}
+h2{font-size:clamp(1.4rem,3.2vw,2.5rem);line-height:1.1;letter-spacing:-.02em;font-weight:800;margin-bottom:8px;}
+.lead{font-size:clamp(.95rem,1.55vw,1.2rem);color:var(--muted);max-width:62ch;margin-top:10px;}
+.sub{color:var(--muted);font-size:clamp(.9rem,1.35vw,1.1rem);max-width:66ch;margin-bottom:14px;}
+
+/* dark slide */
+.dark{background:radial-gradient(130% 130% at 14% 0%,var(--navy2),#0a1322);color:#fff;}
+.dark .lead{color:#cfe0ff;}.dark .kicker{color:var(--sky);}
+.dark .sub{color:rgba(207,224,255,.7);}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;}
+.chip{font-size:.78rem;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#e7eefb;border-radius:999px;padding:8px 14px;}
+
+/* lists */
+ul{list-style:none;}
+li{position:relative;padding-left:26px;margin-bottom:10px;font-size:clamp(.9rem,1.32vw,1.06rem);}
+li::before{content:"▸";position:absolute;left:2px;color:var(--blue);font-weight:900;}
+
+/* two-col cards */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;}
+@media(max-width:760px){.cols{grid-template-columns:1fr;}}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 10px 28px rgba(18,35,59,.08);}
+.card.red{border-color:#fbd5d5;}.card.green{border-color:#c7e8d2;}
+.card h3{font-size:.94rem;margin-bottom:10px;font-weight:700;}
+.card.red h3{color:var(--rose);}.card.green h3{color:var(--green);}
+.card li::before{content:"✗";color:var(--rose);}.card.green li::before{content:"✓";color:var(--green);}
+.banner{margin-top:20px;background:linear-gradient(90deg,var(--blue),#1e3a8a);color:#fff;border-radius:14px;padding:15px 20px;font-weight:700;font-size:clamp(.95rem,1.45vw,1.2rem);text-align:center;}
+
+/* stat band */
+.statband{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px;box-shadow:0 8px 22px rgba(18,35,59,.07);min-width:118px;}
+.stat b{display:block;font-size:clamp(1.4rem,2.8vw,2.2rem);letter-spacing:-.02em;color:var(--navy);line-height:1;}
+.stat span{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+
+/* feature + visual */
+.feat{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,46px);align-items:start;margin-top:16px;}
+@media(max-width:820px){.feat{grid-template-columns:1fr;}}
+.viz{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;}
+
+/* workflow flow */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin-top:20px;}
+@media(max-width:760px){.flow{grid-template-columns:1fr;}}
+.fstage{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;box-shadow:0 8px 22px rgba(18,35,59,.07);}
+.fstage .num{width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;font-size:.9rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+.fstage h4{font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.fstage p{font-size:.78rem;color:var(--muted);}
+.farr{color:var(--blue);font-size:1.6rem;font-weight:900;text-align:center;flex:none;}
+@media(max-width:760px){.farr{transform:rotate(90deg);}}
+
+/* role matrix */
+.matrix{width:100%;border-collapse:collapse;margin-top:16px;font-size:clamp(.8rem,1.25vw,.96rem);}
+.matrix th{background:var(--navy);color:#fff;padding:10px 14px;text-align:left;font-weight:700;font-size:.8rem;letter-spacing:.04em;}
+.matrix th:first-child{border-radius:10px 0 0 0;}.matrix th:last-child{border-radius:0 10px 0 0;}
+.matrix td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+.matrix tr:last-child td{border-bottom:none;}
+.matrix tr:nth-child(even) td{background:#f8fafc;}
+.tick{color:var(--green);font-weight:800;font-size:1rem;}
+.dash{color:#cbd5e1;font-size:1rem;}
+
+/* priority bands */
+.prio-wrap{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;}
+.prio{flex:1;min-width:220px;border-radius:14px;padding:14px 16px;}
+.prio.a{background:#e7f7ec;border:1.5px solid #c7e8d2;}
+.prio.b{background:var(--paper);border:1.5px solid var(--line);}
+.prio h4{font-size:.76rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.prio.a h4{color:var(--green);}.prio.b h4{color:var(--muted);}
+.prio p{font-size:.86rem;color:var(--ink);}
+
+/* ask slide */
+.ask{margin-top:22px;display:inline-block;background:var(--blue);color:#fff;border-radius:14px;padding:14px 22px;font-weight:800;font-size:clamp(1rem,1.55vw,1.25rem);}
+a.link{color:#cfe0ff;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(207,224,255,.4);}
+
+/* chrome */
+.bar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.14);z-index:50;}
+.bar>i{display:block;height:100%;background:var(--blue);transition:width .3s;}
+.nav{position:fixed;top:50%;transform:translateY(-50%);z-index:50;background:rgba(255,255,255,.14);color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:1.3rem;cursor:pointer;transition:background .15s;}
+.nav:hover{background:rgba(255,255,255,.25);}
+.nav.prev{left:14px;}.nav.next{right:14px;}
+.dots{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:7px;}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .2s;}
+.dot.on{background:var(--blue);transform:scale(1.35);}
+.hud{position:fixed;bottom:14px;right:18px;z-index:50;color:#8aa0bd;font-size:.76rem;}
+@media(max-width:680px){.nav{display:none;}}
+</style>
+</head>
+<body>
+<div class="bar"><i id="bar"></i></div>
+<div class="deck" id="deck">
+
+  <!-- ===================== SLIDE 1: TITLE ===================== -->
+  <section class="slide on dark">
+    <div class="kicker">Youth Ministry · Digital Tooling</div>
+    <h1>Know who's connected.<br>Before Sunday.</h1>
+    <p class="lead">The Youth Allocation Platform ensures every actively attending young person is connected to a leader — with a clear picture of who is slipping through the gaps, updated every week as attendance data comes in.</p>
+    <div class="chips">
+      <span class="chip">Built &amp; working today</span>
+      <span class="chip">Phone-first</span>
+      <span class="chip">Week-by-week imports</span>
+      <span class="chip">Priority workflow built in</span>
+      <span class="chip">Role-scoped access</span>
+    </div>
+  </section>
+
+  <!-- ===================== SLIDE 2: THE PROBLEM ===================== -->
+  <section class="slide">
+    <div class="kicker">01 · The need</div>
+    <h2>The gap between attendance and connection.</h2>
+    <p class="sub">Leaders know their regulars. But without a system, the students who attend occasionally — or start drifting — often slip through with no one noticing until it's too late.</p>
+    <div class="cols">
+      <div class="card red">
+        <h3>What happens without this</h3>
+        <ul>
+          <li>Student allocation managed in a spreadsheet — outdated by Wednesday</li>
+          <li>No visibility into who is attending less than they used to</li>
+          <li>Leaders unsure which students are "theirs" for follow-up</li>
+          <li>New students arrive and fall through the gaps</li>
+          <li>Grade leaders each reinventing their own tracking system</li>
+        </ul>
+      </div>
+      <div class="card green">
+        <h3>What this enables</h3>
+        <ul>
+          <li>Every active student has a named leader — visible to the whole team</li>
+          <li>At-risk students flagged automatically from attendance data</li>
+          <li>Grade leaders see only their cohort; quad leaders see their bracket</li>
+          <li>Director sees the whole ministry at a glance</li>
+          <li>Import runs weekly — status updates automatically</li>
+        </ul>
+      </div>
+    </div>
+    <div class="banner">Connection is the ministry. This makes sure it doesn't slip through admin gaps.</div>
+  </section>
+
+  <!-- ===================== SLIDE 3: THE WORKFLOW ===================== -->
+  <section class="slide">
+    <div class="kicker">02 · How it works</div>
+    <h2>A weekly rhythm, not a one-off project.</h2>
+    <p class="sub">The platform is designed around the natural weekly cycle of youth ministry — import after Sunday, review mid-week, allocate before the following Sunday.</p>
+    <div class="flow">
+      <div class="fstage">
+        <div class="num">1</div>
+        <h4>Import</h4>
+        <p>Director uploads service and/or group attendance CSV after each event. Incremental — new sessions stack on top of existing totals.</p>
+      </div>
+      <div class="farr">›</div>
+      <div class="fstage">
+        <div class="num">2</div>
+        <h4>Classify</h4>
+        <p>Platform automatically flags active students (≥2 attendances) and at-risk students (declining or stopped). Thresholds are configurable.</p>
+      </div>
+      <div class="farr">›</div>
+      <div class="fstage">
+        <div class="num">3</div>
+        <h4>Allocate</h4>
+        <p>Grade logins connect students to leaders using a search picker that surfaces active students first. Cross-grade same-gender allocation is supported.</p>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:.84rem;color:var(--muted);margin-top:16px;">The whole cycle takes minutes once set up — with each role doing only their part.</p>
+  </section>
+
+  <!-- ===================== SLIDE 4: PRIORITY WORKFLOW ===================== -->
+  <section class="slide">
+    <div class="kicker">03 · The priority workflow</div>
+    <h2>Active students first. Always.</h2>
+    <p class="sub">Not all students need the same urgency of connection. The platform builds the priority decision into the interface rather than leaving it to individual judgement.</p>
+    <div class="prio-wrap">
+      <div class="prio a">
+        <h4>⭐ Priority — Active students</h4>
+        <p>Attended <strong>2 or more</strong> combined service and/or group events in the last 10. These students have an existing relationship with the ministry and should have a named leader before the week begins. They appear at the top of every picker, search, and list.</p>
+      </div>
+      <div class="prio b">
+        <h4>Optional — Lower attendance</h4>
+        <p>Attended fewer than 2 events. Visible and allocatable, but presented at lower priority. Includes new students with no attendance history yet. Leaders can still be assigned when capacity allows.</p>
+      </div>
+    </div>
+    <ul style="margin-top:18px;">
+      <li>The <strong>Leaders &amp; Allocation</strong> page header shows a live count of active students still pending a leader — the single most important number each week.</li>
+      <li>A warning banner appears until every active student is covered; then a green confirmation replaces it.</li>
+      <li>Each leader card shows a <strong>capacity gauge bar</strong> — how loaded they are relative to the fair-share target — so uneven allocation is visible at a glance.</li>
+      <li>At-risk students are surfaced prominently in the At Risk tab and can still be allocated even if their attendance is low.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== SLIDE 5: ROLES ===================== -->
+  <section class="slide">
+    <div class="kicker">04 · Role structure</div>
+    <h2>Everyone sees exactly what they need.</h2>
+    <p class="sub">Access is scoped to each login's responsibility. Grade logins can't accidentally affect other grades; quad logins have a read-only view across their bracket.</p>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Login</th>
+          <th>Scope</th>
+          <th>Bottom nav</th>
+          <th>Add leaders / allocate</th>
+          <th>At-risk detail</th>
+          <th>Import</th>
+          <th>Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Grade</strong><br><span style="font-size:.76rem;color:var(--muted)">e.g. Grade 9 Girls</span></td>
+          <td>Own grade + gender only</td>
+          <td style="font-size:.76rem;">Home · My Students · Trends · At Risk</td>
+          <td><span class="tick">✓</span> own grade + cross-grade same gender (via Leaders &amp; Alloc in Quick Actions)</td>
+          <td><span class="tick">✓</span> own grade</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="dash">—</span></td>
+        </tr>
+        <tr>
+          <td><strong>Quad</strong><br><span style="font-size:.76rem;color:var(--muted)">e.g. Girls 7–9</span></td>
+          <td>Gender + age bracket</td>
+          <td style="font-size:.76rem;">Home · Leaders &amp; Alloc · Trends · At Risk</td>
+          <td><span class="dash">—</span> view-only (grade filter chips narrow to any year in bracket)</td>
+          <td><span class="tick">✓</span> quad only</td>
+          <td><span class="dash">—</span></td>
+          <td><span class="dash">—</span></td>
+        </tr>
+        <tr>
+          <td><strong>Director</strong></td>
+          <td>Full ministry</td>
+          <td style="font-size:.76rem;">Home · Leaders &amp; Alloc · Trends · At Risk</td>
+          <td><span class="tick">✓</span> all grades + genders (year + gender filter chips)</td>
+          <td><span class="tick">✓</span> all + recompute</td>
+          <td><span class="tick">✓</span></td>
+          <td><span class="dash">—</span></td>
+        </tr>
+        <tr>
+          <td><strong>Admin</strong></td>
+          <td>Full + back office</td>
+          <td style="font-size:.76rem;">Home · Leaders &amp; Alloc · Trends · At Risk</td>
+          <td><span class="tick">✓</span> all</td>
+          <td><span class="tick">✓</span></td>
+          <td><span class="tick">✓</span></td>
+          <td><span class="tick">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">4 roles · 12 grade logins (one per year group <strong>per gender</strong>) · 4 quad logins · 1 director · 1 admin = 30 total accounts. Leaders &amp; Allocation is in the bottom nav for every role except grade (where it's a Quick Action). Demo password: <code>demo1234</code> — try <code>grade7f@</code> vs <code>g79@youth.ministry</code>.</p>
+  </section>
+
+  <!-- ===================== SLIDE 6: DATA & IMPORTS ===================== -->
+  <section class="slide">
+    <div class="kicker">05 · Attendance data</div>
+    <h2>Upload your data the way you already collect it.</h2>
+    <p class="sub">The import system is resilient and format-flexible — whether your attendance comes from Planning Center, ChurchSuite, or a spreadsheet, it's designed to just work.</p>
+    <div class="statband">
+      <div class="stat"><b>2</b><span>stream types</span></div>
+      <div class="stat"><b>Weekly</b><span>incremental</span></div>
+      <div class="stat"><b>Auto</b><span>at-risk recompute</span></div>
+      <div class="stat"><b>0</b><span>duplicates</span></div>
+    </div>
+    <ul style="margin-top:16px;">
+      <li><strong>Fridays CSV</strong> — first_name, last_name, gender, grade, then one date column per Friday session. Attendance values: true/false, yes/no, 1/0.</li>
+      <li><strong>Group / Lifegroup CSV</strong> — same format with optional group_name. Lifegroups tracked independently and compared to service attendance.</li>
+      <li><strong>Excel short-date columns</strong> — exports from Excel often use "7-Feb" or "14-Mar" instead of "2025-02-07". The system detects and normalises these automatically.</li>
+      <li><strong>Optional enrichment columns</strong> — mobile, parent_phone (or guardian_phone), date_of_birth (or birthday). Included if available; not required. Updated on each re-import.</li>
+      <li><strong>Outlier protection</strong> — any session where attendance is below 50% of the term average is flagged as an outlier and excluded from trend calculations, preventing anomalous weeks from distorting the picture.</li>
+      <li><strong>Incremental upsert</strong> — safe to upload each week; new sessions stack on existing totals; students matched by name, not duplicated.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== SLIDE 7: TRENDS ===================== -->
+  <section class="slide">
+    <div class="kicker">06 · Attendance trends</div>
+    <h2>Three numbers that drive pastoral action.</h2>
+    <p class="sub">The Trends screen gives each role a column chart plus a consistent three-number summary — with previous-term comparison — so trend is visible at a glance without reading a bar.</p>
+    <div class="cols">
+      <div class="card">
+        <h3 style="color:var(--navy);">Fridays — column chart + three-number card</h3>
+        <ul>
+          <li>Column chart of last 10 sessions with trend badge (↑ ↓ →) — ministry-wide at the top, then role-specific drill-down</li>
+          <li>Three summary numbers below each chart: <strong>Unique attenders</strong> (pastoral breadth) · <strong>Avg students/session</strong> (operational load) · <strong>Avg sessions/student</strong> (individual engagement)</li>
+          <li>Each number shows a "prev term: N" comparison line so movement is immediately visible</li>
+          <li>Director &amp; admin: tap any quad to expand, tap any grade within it — three levels without leaving the page. Dropdowns preserve scroll position.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--navy);">Lifegroups — same three-number pattern</h3>
+        <ul>
+          <li>Overview card shows the same three numbers for all enrolled students: avg students/session · unique attenders · avg sessions/student — with prev-term comparison</li>
+          <li>A breadth bar shows what proportion of enrolled students attended at least once (e.g. 8 of 12 enrolled = 67%)</li>
+          <li>Per-grade rows with the same three numbers; tap to expand individual groups (e.g. Friday Group vs Sunday Group) each with their own three-number card and bar</li>
+          <li>Grade logins see their individual groups directly without expanding</li>
+          <li><strong>Export</strong> (quad / director / admin) downloads full CSV with per-quad and grade summary</li>
+        </ul>
+      </div>
+    </div>
+    <div class="banner">Every leader can see their students. Every director can see the whole picture.</div>
+  </section>
+
+  <!-- ===================== SLIDE 8: VISIBILITY ===================== -->
+  <section class="slide">
+    <div class="kicker">07 · Visibility for leadership</div>
+    <h2>The right picture for each level of leadership.</h2>
+    <p class="sub">No one sees too much or too little. Each login's home screen and nav is configured to surface only what they act on.</p>
+    <div class="feat">
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:200px;">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(18,35,59,.07);">
+          <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Director / Admin</div>
+          <div style="font-size:.88rem;">Bottom nav: Home | Leaders &amp; Alloc | Trends | At Risk. Leaders &amp; Allocation covers the full ministry — Year + Gender filter chips narrow to any cohort. Trends drill down: quad → grade → individual chart.</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(18,35,59,.07);">
+          <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Quad Login</div>
+          <div style="font-size:.88rem;">Bottom nav: Home | Leaders &amp; Alloc | Trends | At Risk. Leaders &amp; Alloc is read-only with Year filter chips for their bracket. Lifegroup trends drill down by grade with individual group breakdowns.</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(18,35,59,.07);">
+          <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Grade Login (per gender)</div>
+          <div style="font-size:.88rem;">Bottom nav: Home | My Students | Trends | At Risk. Leaders &amp; Alloc in Quick Actions — add leaders and allocate from one merged card view. Lifegroup trends show individual lifegroup cards for their grade.</div>
+        </div>
+      </div>
+      <ul>
+        <li><strong>Leaders &amp; Allocation is one page for all roles</strong> — leader cards with capacity gauges, student picker, add/edit/remove. Grade and gender filter chips scope it to any cohort. No separate "Allocate" page.</li>
+        <li><strong>Home hero card</strong> shows a compact Youth / Groups table (Unique + Avg/wk) for this term, with previous-term comparison below. Grade logins see a 4-stat allocation strip; quad/director/admin see an expandable per-grade attendance breakdown.</li>
+        <li><strong>Trends Fridays drill-down</strong> — director/admin tap a quad to expand, tap a grade within it to expand further. Three levels without leaving the page.</li>
+        <li><strong>Lifegroup trends</strong> show individual named groups (Friday Group, Sunday Group) with enrolled/unique/avg — visible at grade level for all roles, expandable by grade for quad and above.</li>
+        <li><strong>My Students</strong> — a leader selects themselves and sees their students' phone, birthday, parent number, and recent attendance pips. No separate leader login needed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== SLIDE 9: TECH ===================== -->
+  <section class="slide">
+    <div class="kicker">08 · Technical approach</div>
+    <h2>Backend-agnostic. Ready when you are.</h2>
+    <p class="sub">The application architecture separates business logic from the database — the demo runs entirely in-browser with no server. When you're ready to connect to a real backend, only one file changes.</p>
+    <div class="cols">
+      <div class="card">
+        <h3 style="color:var(--navy);">Today — demo-ready</h3>
+        <ul>
+          <li>Standalone HTML demo — works offline, no install</li>
+          <li>Full Express/TypeScript backend written and ready</li>
+          <li>In-memory data store by default; JSON-file persistence available</li>
+          <li>Role-based access control fully implemented</li>
+          <li>65 automated tests covering allocation, import, trends, and at-risk</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--navy);">When you're ready — production</h3>
+        <ul>
+          <li>Swap to any database by implementing the repository interface</li>
+          <li>Supabase recommended (PostgreSQL + Auth)</li>
+          <li>Deploy to Railway, Render, or Fly.io — under $10/mo at this scale</li>
+          <li>Same codebase, same front-end, same training materials</li>
+          <li>No rebuild required — the demo <em>is</em> the app</li>
+        </ul>
+      </div>
+    </div>
+    <div class="statband" style="margin-top:14px;">
+      <div class="stat"><b>4</b><span>role types</span></div>
+      <div class="stat"><b>30</b><span>accounts typical</span></div>
+      <div class="stat"><b>65</b><span>automated tests</span></div>
+      <div class="stat"><b>~720</b><span>students at scale</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== SLIDE 9: THE ASK ===================== -->
+  <section class="slide dark">
+    <div class="kicker">The ask</div>
+    <h1 style="font-size:clamp(1.7rem,4.2vw,3.2rem);">One decision.<br>Every student connected.</h1>
+    <p class="lead">The platform is built, tested, and demo-ready today. It runs offline with realistic data so every leader and director can explore it before committing. Adopt it for the current term — prove the value with real attendance data — and connect to a shared backend when the team is ready.</p>
+    <div class="ask">Approve use for this term's leader allocation</div>
+    <p class="lead" style="margin-top:22px;font-size:.92rem;">
+      Try it now: <a class="link" href="allocation-platform.html">Open the app demo</a>
+      &nbsp;·&nbsp;
+      <a class="link" href="allocation-training.html">Training guides</a>
+    </p>
+    <div class="chips" style="margin-top:20px;">
+      <span class="chip">No infrastructure needed to start</span>
+      <span class="chip">Training already written</span>
+      <span class="chip">Works on any phone, any browser</span>
+      <span class="chip">First Sunday setup in under an hour</span>
+    </div>
+  </section>
+
+</div>
+
+<button class="nav prev" onclick="go(-1)">‹</button>
+<button class="nav next" onclick="go(1)">›</button>
+<div class="dots" id="dots"></div>
+<div class="hud" id="hud"></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0;
+const dots=document.getElementById('dots');
+slides.forEach((_,n)=>{
+  const d=document.createElement('div');
+  d.className='dot'+(n===0?' on':'');
+  d.onclick=()=>show(n);
+  dots.appendChild(d);
+});
+
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+  [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));
+  document.getElementById('bar').style.width=((i+1)/slides.length*100)+'%';
+  document.getElementById('hud').textContent=(i+1)+' / '+slides.length;
+}
+function go(d){show(i+d);}
+
+// Keyboard navigation
+addEventListener('keydown',e=>{
+  if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();go(1);}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(-1);}
+  else if(e.key==='Home')show(0);
+  else if(e.key==='End')show(slides.length-1);
+});
+
+// Touch swipe
+let sx=0;
+addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-sx;
+  if(Math.abs(dx)>50)go(dx<0?1:-1);
+},{passive:true});
+
+// Click zone navigation (outside nav buttons)
+addEventListener('click',e=>{
+  if(e.target.closest('.nav,.dot,a,button'))return;
+  const x=e.clientX/innerWidth;
+  if(x>0.62)go(1);
+  else if(x<0.38)go(-1);
+});
+
+show(0);
+</script>
+</body>
+</html>
