@@ -534,9 +534,11 @@ let students=[];
         else if(p<80){sA=7+(p%3);if(sA>10)sA=10;gA=4+(p%2);if(gA>6)gA=6;} // good
         else{sA=9+(p%2);if(sA>10)sA=10;gA=5+(p%2);if(gA>6)gA=6;}           // excellent
 
-        // Previous-term data — at-risk students had better attendance last term
+        // Previous-term data — flagged students had better attendance last term
         let psA=0,psT=0,pgA=0,pgT=0;
         if(sT>0&&sA<5){psT=10;pgT=6;psA=5+(p%4);if(psA>8)psA=8;pgA=3+(p%3);if(pgA>5)pgA=5;}
+        // Declining students (≥50% but <75%) also had higher attendance last term
+        else if(sT>0&&sA/sT<0.75){psT=10;pgT=6;psA=Math.min(10,sA+1+(p%3));pgA=Math.min(6,gA+1+(p%2));}
 
         // Per-session attendance history
         const hist=[];for(let w=0;w<sT;w++){hist.push(sA>0&&(p+w*13)%10<Math.round(sA/sT*10));}
