@@ -2405,9 +2405,12 @@ function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');rend
   // On a real phone, drop any stale 'phone' pref so it can never re-trap the user.
   if(phoneQ.matches) localStorage.removeItem('ya_view');
 
-  // Apply saved preference after DOM is ready (phoneMode is already false on phones)
+  // Apply the resolved view on load. Calling applyView(false) is REQUIRED for the
+  // native case: #app starts inside the (display:none) phone-shell in the markup, and
+  // applyView(false) is what relocates it out to <body>. Without this the native app
+  // renders into a hidden container and shows a white screen.
   syncToggle();
-  if(phoneMode) applyView(true);
+  applyView(phoneMode);
 })();
 
 // ── BOOT ──
