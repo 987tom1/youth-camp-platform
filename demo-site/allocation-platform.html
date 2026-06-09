@@ -305,6 +305,8 @@ body.phone-mode .mb.pick{max-height:88vh}
 #view-toggle:hover{background:#1a3a6b;opacity:1}
 #view-toggle svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 @media(min-width:768px){#view-toggle{bottom:20px;right:20px}}
+/* The phone-preview frame is a laptop demo aid only — never offer it on a real phone */
+@media(max-width:767.98px){#view-toggle{display:none!important}}
 body.phone-mode{background:#0b1220;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;padding:40px 20px 80px}
 body.phone-mode::before{content:'Phone Preview';display:block;color:rgba(255,255,255,.4);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;font-family:var(--f)}
 body.phone-mode .phone-shell{position:relative;width:390px;flex-shrink:0;background:#000;border-radius:50px;padding:12px;box-shadow:0 0 0 2px #2d3f56,0 0 0 6px #1a2a3a,0 24px 60px rgba(0,0,0,.7);overflow:hidden}
@@ -2333,7 +2335,12 @@ function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');rend
 (function initPhoneToggle(){
   // On first load, #app lives directly in body (desktop mode).
   // In phone mode we move #app into the phone-shell screen div.
-  let phoneMode = localStorage.getItem('ya_view') === 'phone';
+  // The phone-preview frame is a LAPTOP demo aid only. On a real phone (narrow
+  // viewport) we always show the native full-screen app, hide the toggle, and
+  // never honour a saved 'phone' preference — otherwise the user is trapped in a
+  // phone-inside-a-phone that double-scrolls.
+  const phoneQ = window.matchMedia('(max-width: 767.98px)');
+  let phoneMode = !phoneQ.matches && localStorage.getItem('ya_view') === 'phone';
 
   function applyView(phone){
     const app = document.getElementById('app');
@@ -2368,6 +2375,7 @@ function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');rend
   }
 
   window.toggleView = function(){
+    if(phoneQ.matches) return; // no phone-preview frame on real phones
     phoneMode = !phoneMode;
     localStorage.setItem('ya_view', phoneMode ? 'phone' : 'desktop');
     applyView(phoneMode);
@@ -2378,7 +2386,23 @@ function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');rend
     }
   };
 
-  // Apply saved preference after DOM is ready
+  const toggleBtn = document.getElementById('view-toggle');
+  function syncToggle(){ if(toggleBtn) toggleBtn.style.display = phoneQ.matches ? 'none' : 'flex'; }
+
+  // Keep things sane across rotation / window resize / responsive dev tools:
+  // if we drop to phone width while framed, unframe back to the native app.
+  function onViewportChange(){
+    if(phoneQ.matches && phoneMode){ phoneMode = false; applyView(false); }
+    syncToggle();
+  }
+  if(phoneQ.addEventListener) phoneQ.addEventListener('change', onViewportChange);
+  else if(phoneQ.addListener) phoneQ.addListener(onViewportChange);
+
+  // On a real phone, drop any stale 'phone' pref so it can never re-trap the user.
+  if(phoneQ.matches) localStorage.removeItem('ya_view');
+
+  // Apply saved preference after DOM is ready (phoneMode is already false on phones)
+  syncToggle();
   if(phoneMode) applyView(true);
 })();
 
