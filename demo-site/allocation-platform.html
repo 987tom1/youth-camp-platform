@@ -1322,12 +1322,16 @@ function fPicker(){
   if(!h)h='<div style="text-align:center;padding:32px;color:var(--muted);font-size:.9rem">No students found</div>';
   const el=document.getElementById('plist');if(el)el.innerHTML=h;
 }
-function addPick(sid){if(!_pCtx)return;const u=S.user;if(allocations.find(a=>a.sid===sid&&a.lid===_pCtx.lid)){toast('Already assigned');return;}allocations.push({id:uid(),sid,lid:_pCtx.lid,role:u.role,at:new Date().toISOString()});persist();_pCtx.done.add(sid);fPicker();pickerSyncBg();const s=students.find(x=>x.id===sid);if(s)toast(s.fn+' '+s.ln+' added to '+(_pCtx.l?_pCtx.l.fn:'leader'));}
+// Guarded allocation insert — never creates a duplicate (sid,lid) row. Returns true if added.
+function addAllocation(sid,lid,role){if(allocations.some(a=>a.sid===sid&&a.lid===lid))return false;allocations.push({id:uid(),sid,lid,role:role||'',at:new Date().toISOString()});return true;}
+// Strip any duplicate (sid,lid) allocation rows (repairs older saved demo state)
+function dedupeAllocations(){const seen=new Set(),out=[];for(const a of allocations){const k=a.sid+'|'+a.lid;if(seen.has(k))continue;seen.add(k);out.push(a);}if(out.length!==allocations.length){allocations=out;persist();}}
+function addPick(sid){if(!_pCtx)return;const u=S.user;if(!addAllocation(sid,_pCtx.lid,u.role)){toast('Already assigned');return;}persist();_pCtx.done.add(sid);fPicker();pickerSyncBg();const s=students.find(x=>x.id===sid);if(s)toast(s.fn+' '+s.ln+' added to '+(_pCtx.l?_pCtx.l.fn:'leader'));}
 function remPick(sid){if(!_pCtx)return;allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===_pCtx.lid));persist();_pCtx.done.delete(sid);fPicker();pickerSyncBg();const s=students.find(x=>x.id===sid);if(s)toast(s.fn+' '+s.ln+' removed from '+(_pCtx.l?_pCtx.l.fn:'leader'));}
 // Re-render the Leaders page behind the picker so the leader's student list stays
 // current. render() only rewrites #app; the modal lives in #modal-root and is untouched.
 function pickerSyncBg(){render();}
-function remAU(sid,lid){allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===lid));persist();renderLeaders();const s=students.find(x=>x.id===sid),l=leaders.find(x=>x.id===lid);undo('Removed '+(s?s.fn+' '+s.ln:'student')+' from '+(l?l.fn:'leader'),()=>{allocations.push({id:uid(),sid,lid,role:S.user.role,at:new Date().toISOString()});persist();renderLeaders();});}
+function remAU(sid,lid){allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===lid));persist();renderLeaders();const s=students.find(x=>x.id===sid),l=leaders.find(x=>x.id===lid);undo('Removed '+(s?s.fn+' '+s.ln:'student')+' from '+(l?l.fn:'leader'),()=>{addAllocation(sid,lid,S.user.role);persist();renderLeaders();});}
 function expCSV(){const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender};const rows=[['Leader','Gender','Grades','Student','Grade','Gender','Fridays%','At Risk']];const sc=scopeS(actor,students);for(const a of allocations){const s=sc.find(x=>x.id===a.sid),l=leaders.find(x=>x.id===a.lid);if(!s||!l)continue;const p=s.sT>0?Math.round(s.sA/s.sT*100)+'%':'—';rows.push([l.fn,l.gender||'',l.grades.join(';'),s.fn+' '+s.ln,s.grade||'',s.gender,p,s.ar||'']);}const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='allocations.csv';a.click();URL.revokeObjectURL(url);toast('Exported '+rows.length+' rows');}
 
 // quad-view route now redirects to Leaders & Allocation
@@ -1662,7 +1666,7 @@ function tSF(t,v){if(t==='g'){_sS.gf.has(v)?_sS.gf.delete(v):_sS.gf.add(v);}else
 function tSS(v){_sS.search=v;renderStudents();}
 function showSD(id){
   const s=students.find(x=>x.id===id);if(!s)return;
-  const as=allocations.filter(a=>a.sid===id).map(a=>leaders.find(l=>l.id===a.lid)).filter(Boolean);
+  const _seenL=new Set();const as=allocations.filter(a=>a.sid===id).map(a=>leaders.find(l=>l.id===a.lid)).filter(l=>l&&!_seenL.has(l.id)&&_seenL.add(l.id));
   const p=pct(s),gp=s.gT>0?Math.round(s.gA/s.gT*100):null;
   const combined=s.sA+s.gA,combinedT=s.sT+s.gT;
   const avCls=s.gender==='female'?'f':'m';
@@ -1687,10 +1691,25 @@ function showSD(id){
   h+='</div>';
   if(histPips)h+='<div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Last 10 Fridays</div><div style="display:flex;gap:5px;align-items:flex-end;padding:4px 0">'+histPips+'</div>';
   h+='</div>';
-  h+='<div class="sh_">Leader Assignments</div><div style="margin-bottom:14px">'+(as.length?as.map(l=>'<div class="kv"><span class="k">'+l.fn+'</span><span class="v"><span class="chip ca">assigned</span></span></div>').join(''):'<p style="color:var(--muted);font-size:.84rem;padding:8px 0">Not allocated yet</p>')+'</div>';
+  const canEdit=['grade','quad','director','admin'].includes(S.user.role);
+  h+='<div class="sh_">Leader Assignments</div>';
+  h+='<div style="margin-bottom:'+(canEdit?'8px':'14px')+'">';
+  if(as.length){for(const l of as){h+='<div class="kv"><span class="k">'+l.fn+' <span style="color:var(--muted);font-weight:400;font-size:.7rem">'+(l.gender||'any')+' · Yr '+l.grades.join('/')+'</span></span><span class="v">'+(canEdit?'<button class="btn bg bsm" onclick="unassignSD(\''+s.id+'\',\''+l.id+'\')" style="padding:3px 10px;color:var(--rose)">Remove</button>':'<span class="chip ca">assigned</span>')+'</span></div>';}}
+  else{h+='<p style="color:var(--muted);font-size:.84rem;padding:8px 0">Not allocated yet</p>';}
+  h+='</div>';
+  if(canEdit){
+    h+='<div class="srch" style="margin-bottom:6px">'+IC.search.replace('<svg ','<svg ')+'<input id="sd-lq" placeholder="Search a leader to assign…" oninput="sdLeaderSearch(\''+s.id+'\')"></div>';
+    h+='<div id="sd-llist" style="margin-bottom:14px"></div>';
+  }
   h+='<div style="display:flex;gap:8px"><button class="btn bp bsm" onclick="closeM();go(\'leaders\')">'+IC.users.replace('<svg ','<svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;margin-right:3px" ')+' Leaders</button><button class="btn bs bsm" onclick="closeM()">Close</button></div>';
   modal(h);
+  if(canEdit)sdLeaderSearch(s.id);
 }
+// Eligible leaders for a student: in the actor's scope, matching the student's gender + grade, not already assigned
+function sdEligibleLeaders(s){const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender};const assigned=new Set(allocations.filter(a=>a.sid===s.id).map(a=>a.lid));return scopeL(actor,leaders).filter(l=>!assigned.has(l.id)&&(!l.gender||l.gender===s.gender)&&(l.grades.length===0||l.grades.includes(s.grade)));}
+function sdLeaderSearch(sid){const s=students.find(x=>x.id===sid);if(!s)return;const q=(document.getElementById('sd-lq')||{value:''}).value.toLowerCase().trim();let list=sdEligibleLeaders(s);if(q)list=list.filter(l=>l.fn.toLowerCase().includes(q));list=list.slice(0,12);const el=document.getElementById('sd-llist');if(!el)return;if(!list.length){el.innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:.84rem">'+(q?'No matching leaders':'No eligible leaders for this student')+'</div>';return;}el.innerHTML=list.map(l=>'<button class="pi" onclick="assignSD(\''+sid+'\',\''+l.id+'\')"><div class="av '+(l.gender==='female'?'f':l.gender==='male'?'m':'n')+'" style="width:30px;height:30px;font-size:.72rem;flex:none">'+l.fn.charAt(0)+'</div><div style="flex:1"><div style="font-size:.86rem;font-weight:600">'+l.fn+'</div><div style="font-size:.7rem;color:var(--muted)">'+(l.gender||'any gender')+' · Yr '+l.grades.join(', ')+'</div></div><span style="color:var(--blue);font-size:1.3rem;font-weight:700;flex:none">+</span></button>').join('');}
+function assignSD(sid,lid){const s=students.find(x=>x.id===sid),l=leaders.find(x=>x.id===lid);if(addAllocation(sid,lid,S.user.role)){persist();toast((s?s.fn+' '+s.ln:'Student')+' → '+(l?l.fn:'leader'));}render();showSD(sid);}
+function unassignSD(sid,lid){allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===lid));persist();const s=students.find(x=>x.id===sid),l=leaders.find(x=>x.id===lid);toast((s?s.fn+' '+s.ln:'Student')+' removed from '+(l?l.fn:'leader'));render();showSD(sid);}
 
 // ── TRENDS ──────────────────────────────────────────────────
 let _trTab='svc',_trQuad=null,_trGrade=null,_trGradeOpen=null,_trQuadOpen=null;
@@ -2386,7 +2405,7 @@ function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');rend
 })();
 
 // ── BOOT ──
-function boot(){const tok=localStorage.getItem('ya_tok');if(tok){try{S.user=AUTH.me(tok);S.token=tok;}catch{localStorage.removeItem('ya_tok');}}restAF();restAR();render();}
+function boot(){dedupeAllocations();const tok=localStorage.getItem('ya_tok');if(tok){try{S.user=AUTH.me(tok);S.token=tok;}catch{localStorage.removeItem('ya_tok');}}restAF();restAR();render();}
 try{boot();}catch(e){document.getElementById('app').innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fee2e2;color:#991b1b;padding:24px;font-family:system-ui;text-align:center"><div><div style="font-size:36px">⚠️</div><h2>Failed to load</h2><p style="margin-top:8px">'+String(e)+'</p><button style="margin-top:20px;padding:10px 20px;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="localStorage.clear();location.reload()">Clear &amp; retry</button></div></div>';}
 </script>
 </body>
