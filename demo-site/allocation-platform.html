@@ -914,7 +914,7 @@ function renderHome(){
   const grpWeeks=grpStudents.length?Math.max(0,...grpStudents.map(s=>s.gT)):0;
 
   // Current term — compact table: row label includes count in brackets, col headers once
-  b+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px">';
+  b+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px;table-layout:fixed"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup>';
   b+='<thead><tr>';
   b+='<th style="font-size:.48rem;font-weight:700;opacity:.4;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding-bottom:3px">YS Brisbane</th>';
   b+='<th style="font-size:.52rem;font-weight:700;opacity:.5;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:3px">Unique</th>';
@@ -946,7 +946,7 @@ function renderHome(){
     const prevGrpUniq=sc.filter(s=>s.pgA>0).length;
     const prevGrpAvg=prevGrpStudents.length>0?Math.round(prevGrpAtt/prevGrpStudents.length):0;
     const prevGrpRun=prevGrpStudents.length?Math.max(...prevGrpStudents.map(s=>s.pgT)):0;
-    b+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px;margin-top:5px">';
+    b+='<table style="width:100%;border-collapse:collapse;margin-bottom:4px;margin-top:5px;table-layout:fixed"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup>';
     b+='<thead><tr>';
     b+='<th style="font-size:.44rem;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding-bottom:2px">Prev term</th>';
     b+='<th style="font-size:.44rem;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:2px">Unique</th>';
@@ -1267,9 +1267,13 @@ function openPicker(lid){
     +'<option value="unalloc">Unallocated from other grades</option>'
     +'</select>'
     +'</div>'
-    +'<div id="plist" class="plist"></div>'
-    +'<button class="btn bs bf" style="margin-top:8px" onclick="closeM()">Done</button>';
+    +'<div id="plist" class="plist" style="flex:1;min-height:0;max-height:none"></div>'
+    +'<button class="btn bs bf" style="margin-top:8px;flex:none" onclick="closeM()">Done</button>';
   modal(modalH);
+  // Lay the modal out as a bounded flex column: header/search/filter/Done stay
+  // fixed and only the list scrolls, so Done is always visible without scrolling.
+  const _mb=document.querySelector('#modal-root .mb');
+  if(_mb){_mb.style.display='flex';_mb.style.flexDirection='column';_mb.style.overflowY='hidden';}
   fPicker();setTimeout(()=>document.getElementById('pq')?.focus(),60);
 }
 function piRow(s,muted){
