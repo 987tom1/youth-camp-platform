@@ -131,13 +131,13 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
     </div>
 
     <div class="howto">
-      <h3>3 · The Phone View toggle</h3>
-      <p>The small button in the corner (📱 Phone View) wraps the app in a realistic phone frame — useful for training and demonstrations on a desktop. Click again to switch back to the full desktop layout.</p>
+      <h3>3 · The Phone View toggle (desktop only)</h3>
+      <p>The small button in the corner (📱 Phone View) wraps the app in a realistic phone frame — useful for training and demonstrations on a desktop. Click again to switch back. On an actual phone the app is already full-screen, so this button is hidden.</p>
     </div>
 
     <div class="howto">
-      <h3>4 · Nothing is permanent in the demo</h3>
-      <p>All changes (allocations, leader edits, imports) stay in your browser session. Refreshing the page resets everything. In the live app, data persists to the server and is visible to other logins in real time.</p>
+      <h3>4 · Your changes are saved in the demo</h3>
+      <p>Allocations and leader edits are saved in your browser, so they survive a page refresh &mdash; use <strong>Admin &rarr; Data &rarr; Full Reset</strong> (or clear the site data) to start fresh. Attendance figures are regenerated each time the demo loads. In the live app everything persists to the server and is visible to other logins in real time.</p>
     </div>
   </div>
 
@@ -265,12 +265,11 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
         <h3>Using My Students to look up student contacts</h3>
         <p>Tap <span class="tile">My Students</span> in the bottom nav. Select a leader from the dropdown. You'll see their allocated students with:</p>
         <ul>
-          <li>Mobile number (tap to dial directly on phone)</li>
-          <li>Birthday and parent/guardian phone number</li>
-          <li>Attendance % for Fridays and lifegroup</li>
+          <li>Year, gender and birthday (DD-MM-YYYY) beside the name; student mobile and parent number together on one line (tap to dial)</li>
+          <li>Attendance % for Fridays and lifegroup, plus a second row of <strong>teal</strong> dots for recent lifegroups (beside the green Friday dots)</li>
           <li>Coloured attendance pips for recent Fridays — green = attended, grey = absent</li>
         </ul>
-        <div class="tip">Share this screen with leaders before a follow-up day so they can reach their students directly. No separate contact list needed.</div>
+        <div class="tip">Director and quad logins also get Year (and, for directors, Gender) filter buttons here that narrow the leader dropdown. Share this screen with leaders before a follow-up day so they can reach their students directly.</div>
       </div>
 
       <div class="prioband"><span class="ptag optional">Step 6 · Export when done</span><span class="ln"></span></div>
@@ -287,11 +286,11 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
   <div class="roleblock" data-role="quad">
     <div class="panel">
       <h2>Quad Login</h2>
-      <p class="scope">One login per quad (e.g. Girls Yr 7–9, <code>g79@</code>). You have a read-only view of all leaders and students in your gender + age bracket. Grade logins make allocation changes; you oversee and monitor.</p>
+      <p class="scope">One login per quad (e.g. Girls Yr 7–9, <code>g79@</code>). You oversee &mdash; and can manage &mdash; every leader and student in your gender + age bracket. You see only your own gender's leaders and students.</p>
 
       <div class="howto">
         <h3>Your home screen</h3>
-        <p>Home opens with a compact attendance hero card — <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows showing Unique and Avg/wk for this term, with a previous-term comparison below. Tap <strong>Grade detail</strong> to expand per-grade attendance figures broken into Youth and Groups columns.</p>
+        <p>Home opens with a compact attendance hero card — <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows showing Unique and Avg/wk for this term, with a previous-term comparison below. Below it, an <strong>Attendance by Grade</strong> section shows a tile per year in your bracket (Youth + Groups, Unique + Avg).</p>
         <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below that: Quick Actions (Student Search, My Students) then a grade-by-grade allocation progress bar showing how allocated each year is.</p>
       </div>
 
@@ -303,8 +302,8 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
           <li>Assigned student count, at-risk count, and a status indicator (all clear / declining).</li>
           <li>The first 8 assigned students with attendance % and risk chips.</li>
         </ul>
-        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Use the <strong>Year filter chips</strong> at the top to narrow to a specific grade in your bracket (e.g. show only Year 8 leaders). As a quad login you can view but not add or reassign students.</p>
-        <div class="tip">This is your primary weekly check — scan for leaders with many at-risk students and follow up with the relevant grade login.</div>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">You can add leaders and allocate students just like a grade login &mdash; every change is automatically limited to <strong>your gender and age bracket</strong>, and new leaders you add are set to your gender. Use the <strong>Year filter chips</strong> to narrow to a specific grade in your bracket.</p>
+        <div class="tip">This is your primary weekly view &mdash; keep active students covered across your bracket and watch for leaders carrying many at-risk students.</div>
       </div>
 
       <div class="howto">
@@ -326,12 +325,13 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
 
       <div class="howto">
         <h3>Student Search</h3>
-        <p>Tap <span class="tile">Student Search</span> from Quick Actions to look up any individual in your quad by name. Year filter chips narrow to a specific grade. Tap any student to see their full detail — attendance, leader assignment, and contact info.</p>
+        <p>Tap <span class="tile">Student Search</span> from Quick Actions to look up any individual in your quad by name. Year filter chips narrow to a specific grade. Tap any student to see their full detail &mdash; attendance, contact info, and their leader assignment, where you can <strong>search a leader to assign</strong> (or remove one) in place.</p>
       </div>
 
       <div class="howto">
-        <h3>Why you can't make allocation changes</h3>
-        <p>Quad logins are read-only for allocations. Allocation authority stays with each grade login. Contact the relevant grade login (e.g. grade9f@ for Grade 9 Girls) if a change is needed.</p>
+        <h3>Allocating students</h3>
+        <p>On any leader card tap <strong>+ Add Students</strong>. The picker shows same-gender students matching the leader's grade(s), with active students (2+ attendances) at the top. Tap <strong>+</strong> to assign, the <strong>&minus;</strong> next to an already-assigned student to remove, and the <strong>&times;</strong> (top-right) to close &mdash; the leader's list updates as you go.</p>
+        <div class="tip">You can also assign from <strong>Student Search</strong>: open a student and use "Search a leader to assign" in their detail.</div>
       </div>
     </div>
   </div>
@@ -345,8 +345,8 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
 
       <div class="howto">
         <h3>Your home screen overview</h3>
-        <p>Home opens with an attendance hero card for the whole ministry — a compact table showing <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows, with Unique and Avg/wk columns. Previous-term comparison appears below in the same format. Tap <strong>Grade detail</strong> to expand per-grade figures with separate Youth and Groups columns.</p>
-        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below that: Quick Actions (Student Search, My Students, Import), then By Quad allocation cards and a grade-by-grade progress bar. A "Last Import" card appears if data has been uploaded this term.</p>
+        <p>Home opens with an attendance hero card for the whole ministry — a compact table showing <strong>Youth</strong> (Fridays) and <strong>Groups</strong> rows, with Unique and Avg/wk columns. Previous-term comparison appears below in the same format.</p>
+        <p style="margin-top:6px;font-size:.86rem;color:var(--muted);">Below that: Quick Actions (Student Search, My Students, Import), then an <strong>Attendance by Quad</strong> grid (tap a quad tile to expand it into per-grade rows) and a grade-by-grade allocation progress bar. A "Last Import" card appears if data has been uploaded this term.</p>
         <div class="tip">Your bottom nav is Home | Leaders &amp; Alloc | Trends | At Risk. Leaders &amp; Allocation is always one tap away in the nav — no need to go via Quick Actions.</div>
       </div>
 
@@ -437,10 +437,10 @@ h1{font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.02em;margin:8px 0 6px;col
         <ol>
           <li>Go to <strong>Admin → Accounts</strong>, tap <strong>+ Add Account</strong>.</li>
           <li>Enter a display name. The email field auto-suggests a convention (e.g. <code>grade9f@youth.ministry</code> for Grade 9 Girls, <code>g79@youth.ministry</code> for Girls 7–9 quad) when you select the role and year/quad — edit if needed.</li>
-          <li>Choose the role: <strong>Grade</strong> (select year), <strong>Quad</strong> (select which quad), <strong>Director</strong>, or <strong>Admin</strong>.</li>
+          <li>Choose the role: <strong>Grade</strong> (select a year and a <strong>gender</strong> &mdash; All, Girls or Boys, which sets exactly which students and leaders that login sees), <strong>Quad</strong> (select which quad), <strong>Director</strong>, or <strong>Admin</strong>.</li>
           <li>Tap <strong>Create Account</strong>. Share the email and a temporary password with the login holder.</li>
         </ol>
-        <div class="tip">Accounts are listed in groups — Grade Logins together, Quad Leaders together — so it's easy to confirm all 24 grade logins (12 years × 2 genders) exist before the term starts.</div>
+        <div class="tip">Accounts are listed in groups — Grade Logins together, Quad Leaders together — so it's easy to confirm all 12 grade logins (6 year groups, 2 genders each) exist before the term starts.</div>
       </div>
 
       <div class="howto">
