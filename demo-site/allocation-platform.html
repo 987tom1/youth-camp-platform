@@ -143,6 +143,7 @@ body.phone-mode .hdr{padding-top:50px;height:calc(56px + 50px);align-items:flex-
 
 /* ── SECTION HEADER ── */
 .sh_{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.sh2{font-size:1.4rem;font-weight:800;color:var(--navy);letter-spacing:-.01em;margin:20px 0 8px}
 .ph{margin-bottom:14px}
 .pt{font-size:1.35rem;font-weight:800;color:var(--navy);letter-spacing:-.3px}
 .ps{font-size:.84rem;color:var(--muted);margin-top:3px}
@@ -678,9 +679,12 @@ function scopeL(actor,list){
     if(actor.gender)r=r.filter(l=>!l.gender||l.gender===actor.gender);
     return r;
   }
-  if(actor.role==='quad'){const isJr=actor.quad==='g79'||actor.quad==='b79';return list.filter(l=>l.active&&l.grades.some(g=>isJr?g<=9:g>=10));}
+  if(actor.role==='quad'){const isJr=actor.quad==='g79'||actor.quad==='b79';const qg=quadGender(actor.quad);return list.filter(l=>l.active&&(!l.gender||l.gender===qg)&&l.grades.some(g=>isJr?g<=9:g>=10));}
   return list.filter(l=>l.active);
 }
+// Quad → its gender / its grade bracket
+function quadGender(q){return (q==='g79'||q==='g1012')?'female':'male';}
+function quadGrades(q){return (q==='g79'||q==='b79')?[7,8,9]:[10,11,12];}
 const AR=new Set(['atrisk','stopped','declining','watch']);
 
 // ── AUTH ──
@@ -827,6 +831,10 @@ function shell(body){
 // ── DATE HELPERS ──
 // Format ISO date string (YYYY-MM-DD or full ISO) as D/M
 function fmtDM(iso){if(!iso)return'—';const d=new Date(iso);return d.getUTCDate()+'/'+(d.getUTCMonth()+1);}
+// Birthday YYYY-MM-DD → DD-MM-YYYY
+function fmtBday(iso){if(!iso)return'';const p=String(iso).split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:String(iso);}
+// Deterministic per-session lifegroup attendance (gT sessions, ~gA attended), seeded by student id
+function glHist(s){if(!s.gT)return[];let seed=0;for(const c of String(s.id))seed=(seed*31+c.charCodeAt(0))%100000;const a=[];for(let w=0;w<s.gT;w++)a.push(((seed+w*37)%s.gT)<s.gA);let cur=a.filter(Boolean).length;while(cur<s.gA){const i=a.indexOf(false);if(i<0)break;a[i]=true;cur++;}while(cur>s.gA){const i=a.lastIndexOf(true);if(i<0)break;a[i]=false;cur--;}return a;}
 // Format ISO timestamp as D/M H:MM
 function fmtDMT(iso){if(!iso)return'—';const d=new Date(iso);return d.getUTCDate()+'/'+(d.getUTCMonth()+1)+' '+String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');}
 
@@ -862,7 +870,7 @@ function doLogout(){
   S.token=null;S.user=null;S.page='home';
   localStorage.removeItem('ya_tok');
   // Reset per-session view state so a re-login as a different role sees clean state
-  _lvLeader=null;_hgbOpen=false;
+  _lvLeader=null;
   _trTab='svc';_trGradeOpen=null;_trQuadOpen=null;
   _arF={grade:null,gender:null};
   _aS={gf:new Set(),df:new Set()};
@@ -870,16 +878,15 @@ function doLogout(){
 }
 
 // ── HOME GRADE BREAKDOWN TOGGLE ──
-let _hgbOpen=false;
-function toggleHomeGradeBreakdown(){
-  _hgbOpen=!_hgbOpen;
-  const rows=document.getElementById('hgb-rows');
-  const chev=document.getElementById('hgb-chev');
-  if(rows)rows.style.display=_hgbOpen?'block':'none';
-  if(chev)chev.style.transform=_hgbOpen?'rotate(180deg)':'rotate(0deg)';
-}
-
 // ── HOME ──
+let _homeQuadOpen=null;
+function toggleHomeQuad(q){_homeQuadOpen=(_homeQuadOpen===q)?null:q;renderHome();}
+// Per-session service attendance for an arbitrary student subset (same logic as buildTrends)
+function svcSessFor(studs){return SESSION_DATES.map((d,wi)=>{const att=studs.filter(s=>s.hist&&s.hist[wi]).length;const tot=studs.filter(s=>s.sT>wi).length;return{date:d,att,tot,pct:tot?Math.round(att/tot*100):0};});}
+// Compact per-grade row used inside an expanded quad tile
+function homeGradeMini(grade,studs){const uniq=studs.filter(s=>s.sA>0).length;const ss=svcSessFor(studs).filter(s=>s.tot>0);const avg=ss.length?Math.round(ss.reduce((s,x)=>s+x.att,0)/ss.length):0;return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line)"><div style="width:36px;font-size:.74rem;font-weight:700;color:var(--navy)">Yr '+grade+'</div><div style="flex:1"><span style="font-size:.9rem;font-weight:800;color:var(--navy)">'+uniq+'</span><span style="font-size:.62rem;color:var(--muted);margin-left:4px">uniq</span></div><div><span style="font-size:.9rem;font-weight:800;color:var(--navy)">'+avg+'</span><span style="font-size:.62rem;color:var(--muted);margin-left:4px">avg/wk</span></div></div>';}
+// Attendance tile (qc card): Youth + Groups · Unique + Avg. opts: {click,chev,span,gradeRows}
+function attTile(label,studs,border,opts){opts=opts||{};const svcUniq=studs.filter(s=>s.sA>0).length;const ss=svcSessFor(studs).filter(s=>s.tot>0);const svcAvg=ss.length?Math.round(ss.reduce((s,x)=>s+x.att,0)/ss.length):0;const grpStud=studs.filter(s=>s.gT>0);const grpUniq=studs.filter(s=>s.gA>0).length;const grpAvg=grpStud.length?Math.round(grpStud.reduce((s,x)=>s+x.gA,0)/grpStud.length):0;let h='<div class="qc" style="border-left-color:'+border+';padding:11px'+(opts.span?';grid-column:1/-1':'')+(opts.click?';cursor:pointer':'')+'"'+(opts.click?' onclick="'+opts.click+'"':'')+'>';h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">';if(opts.chev!==undefined)h+=IC.chev.replace('<svg ','<svg style="width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:2.5;flex:none;transition:transform .2s;transform:rotate('+(opts.chev?'90':'0')+'deg)" ');h+='<div style="font-size:.68rem;font-weight:700;color:var(--muted)">'+label+'</div></div>';h+='<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center;margin-bottom:3px">';h+='<div style="font-size:.56rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;width:46px">Youth</div>';h+='<div style="text-align:center;background:var(--paper);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy)">'+svcUniq+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Unique</div></div>';h+='<div style="text-align:center;background:var(--paper);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy)">'+svcAvg+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Avg/wk</div></div>';h+='</div>';h+='<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center">';h+='<div style="font-size:.56rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;width:46px;opacity:.7">Groups</div>';h+='<div style="text-align:center;background:rgba(0,0,0,.03);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy);opacity:.75">'+grpUniq+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Unique</div></div>';h+='<div style="text-align:center;background:rgba(0,0,0,.03);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy);opacity:.75">'+grpAvg+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Avg/grp</div></div>';h+='</div>';if(opts.gradeRows)h+=opts.gradeRows;h+='</div>';return h;}
 function renderHome(){
   const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender},ov=overview(actor);
   const sc=scopeS(actor,students);
@@ -959,67 +966,6 @@ function renderHome(){
     }
     b+='</tbody></table>';
   }
-  // ── Grade breakdown dropdown (quad/director/admin only) ──
-  if(['quad','director','admin'].includes(u.role)){
-    const visGrades=td.byGrade.filter(g=>g.count>0);
-    if(visGrades.length){
-      b+='<button onclick="toggleHomeGradeBreakdown()" style="width:100%;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);font-size:.68rem;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px" id="hgb-toggle">'+IC.chev.replace('<svg ','<svg id="hgb-chev" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;transition:transform .2s;transform:'+(_hgbOpen?'rotate(180deg)':'rotate(0deg)')+'" ')+'Grade detail</button>';
-      // Detect whether any grade has group data (to decide column count)
-      const anyGrpData=sc.some(s=>s.gT>0);
-      b+='<div id="hgb-rows" style="display:'+(_hgbOpen?'block':'none')+';margin-bottom:2px">';
-      // Headers: section labels first, then sub-column labels
-      if(anyGrpData){
-        // Section label super-header row
-        b+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">';
-        b+='<div style="width:32px"></div>';
-        b+='<div style="flex:1;text-align:center;font-size:.44rem;font-weight:800;opacity:.5;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.08);border-radius:4px;padding:2px 0">Youth</div>';
-        b+='<div style="width:4px"></div>';
-        b+='<div style="flex:1;text-align:center;font-size:.44rem;font-weight:800;opacity:.32;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.04);border-radius:4px;padding:2px 0">Groups</div>';
-        b+='</div>';
-      }
-      // Column sub-header row
-      b+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">';
-      b+='<div style="width:32px"></div>';
-      b+='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;text-align:center">';
-      b+='<div style="font-size:.42rem;font-weight:700;opacity:.4;text-transform:uppercase;letter-spacing:.04em">Uniq</div>';
-      b+='<div style="font-size:.42rem;font-weight:700;opacity:.4;text-transform:uppercase;letter-spacing:.04em">Avg/wk</div>';
-      b+='</div>';
-      if(anyGrpData){
-        b+='<div style="width:4px"></div>';
-        b+='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;text-align:center">';
-        b+='<div style="font-size:.42rem;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em">Uniq</div>';
-        b+='<div style="font-size:.42rem;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em">Avg/grp</div>';
-        b+='</div>';
-      }
-      b+='</div>';
-      for(const g of visGrades){
-        const gs=sc.filter(s=>s.grade===g.grade);
-        const gSvcUniq=gs.filter(s=>s.sA>0).length;
-        const gSvcSessGrade=td.byGrade.find(x=>x.grade===g.grade);
-        const gSvcSess=gSvcSessGrade?gSvcSessGrade.svcSess.filter(s=>s.tot>0):[];
-        const gSvcAvg=gSvcSess.length?Math.round(gs.reduce((s,x)=>s+x.sA,0)/gSvcSess.length):0;
-        const grpGs=gs.filter(s=>s.gT>0);
-        const grpAvg=grpGs.length?Math.round(gs.reduce((s,x)=>s+x.gA,0)/grpGs.length):0;
-        b+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">';
-        b+='<div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.5);width:32px;flex:none">Yr '+g.grade+'</div>';
-        // Youth cols — stronger tint
-        b+='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;text-align:center">';
-        b+='<div style="font-size:.76rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:4px 0 0 4px;padding:3px 0;opacity:.85">'+gSvcUniq+'</div>';
-        b+='<div style="font-size:.76rem;font-weight:800;background:rgba(255,255,255,.1);border-radius:0 4px 4px 0;padding:3px 0;opacity:.85">'+gSvcAvg+'</div>';
-        b+='</div>';
-        if(anyGrpData){
-          b+='<div style="width:4px"></div>'; // visual gap
-          // Groups cols — softer tint
-          b+='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px;text-align:center">';
-          b+='<div style="font-size:.76rem;font-weight:800;background:rgba(255,255,255,.05);border-radius:4px 0 0 4px;padding:3px 0;opacity:.6">'+(grpGs.length?gs.filter(s=>s.gA>0).length:'—')+'</div>';
-          b+='<div style="font-size:.76rem;font-weight:800;background:rgba(255,255,255,.05);border-radius:0 4px 4px 0;padding:3px 0;opacity:.6">'+(grpGs.length?grpAvg:'—')+'</div>';
-          b+='</div>';
-        }
-        b+='</div>';
-      }
-      b+='</div>';
-    }
-  }
 
   b+='</div>';
 
@@ -1068,43 +1014,35 @@ function renderHome(){
     b+='<div style="background:var(--card);border:1px solid var(--line);border-radius:var(--rs);padding:8px 4px;text-align:center;box-shadow:var(--sh)"><div style="font-size:1.4rem;font-weight:800;color:var(--rose);line-height:1">'+ov.rsk+'</div><div style="font-size:.56rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px">At Risk</div></div>';
     b+='</div>';
   } else {
-    // Quad summary: no "By Quad" card — just grade breakdown
-    // Director/admin: show all 4 quad cards + grade breakdown
+    // Director/admin: Attendance by Quad — tap a quad to expand per-grade rows
+    const QB={g79:'#db2777',b79:'var(--blue)',g1012:'#7c3aed',b1012:'var(--teal)'};
     if(['admin','director'].includes(u.role)){
       const vq=td.byQuad.filter(q=>q.count>0);
       if(vq.length){
         b+='<div class="sh_">Attendance by Quad</div>';
         b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
-        const QUAD_BORDER={g79:'#db2777',b79:'var(--blue)',g1012:'#7c3aed',b1012:'var(--teal)'};
         for(const q of vq){
-          // Unique attenders = students in this quad who attended at least once
-          const qStudents=students.filter(s=>s.quad===q.quad);
-          const qSvcUniq=qStudents.filter(s=>s.sA>0).length;
-          const qGrpUniq=qStudents.filter(s=>s.gA>0).length;
-          // Avg/wk for services: sum attendance across sessions / sessions run
-          const qSvcSess=q.svcSess.filter(s=>s.tot>0);
-          const qSvcAvg=qSvcSess.length?Math.round(qSvcSess.reduce((s,x)=>s+x.att,0)/qSvcSess.length):0;
-          // Avg/student for groups
-          const qGrpStudents=qStudents.filter(s=>s.gT>0);
-          const qGrpAvg=qGrpStudents.length?Math.round(qGrpStudents.reduce((s,x)=>s+x.gA,0)/qGrpStudents.length):0;
-          b+='<div class="qc '+q.quad+'" style="border-left-color:'+QUAD_BORDER[q.quad]+';padding:11px">';
-          b+='<div style="font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:6px">'+q.label+'</div>';
-          // Youth row
-          b+='<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center;margin-bottom:3px">';
-          b+='<div style="font-size:.56rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;width:46px">Youth</div>';
-          b+='<div style="text-align:center;background:var(--paper);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy)">'+qSvcUniq+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Unique</div></div>';
-          b+='<div style="text-align:center;background:var(--paper);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy)">'+qSvcAvg+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Avg/wk</div></div>';
-          b+='</div>';
-          // Groups row
-          b+='<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center">';
-          b+='<div style="font-size:.56rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;width:46px;opacity:.7">Groups</div>';
-          b+='<div style="text-align:center;background:rgba(0,0,0,.03);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy);opacity:.75">'+qGrpUniq+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Unique</div></div>';
-          b+='<div style="text-align:center;background:rgba(0,0,0,.03);border-radius:4px;padding:3px 2px"><div style="font-size:.94rem;font-weight:800;color:var(--navy);opacity:.75">'+qGrpAvg+'</div><div style="font-size:.44rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Avg/grp</div></div>';
-          b+='</div>';
-          b+='</div>';
+          const open=_homeQuadOpen===q.quad;
+          const qStud=students.filter(s=>s.quad===q.quad);
+          let gradeRows='';
+          if(open){
+            const grs=(q.quad==='g79'||q.quad==='b79')?[7,8,9]:[10,11,12];
+            gradeRows='<div style="margin-top:8px">';
+            for(const gr of grs)gradeRows+=homeGradeMini(gr,qStud.filter(s=>s.grade===gr));
+            gradeRows+='</div>';
+          }
+          b+=attTile(q.label,qStud,QB[q.quad],{click:"toggleHomeQuad('"+q.quad+"')",chev:open,span:open,gradeRows});
         }
         b+='</div>';
       }
+    }
+    // Quad: Attendance by Grade tiles (their bracket)
+    if(u.role==='quad'){
+      const grs=quadGrades(u.quad);
+      b+='<div class="sh_">Attendance by Grade</div>';
+      b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+      for(const gr of grs)b+=attTile('Yr '+gr,sc.filter(s=>s.grade===gr),QB[u.quad]);
+      b+='</div>';
     }
     // Grade bar for quad/admin/director
     if(['admin','director','quad'].includes(u.role)){const vg=ov.byGrade.filter(g=>g.t>0);if(vg.length){b+='<div class="sh_">Allocation by Grade</div><div class="card" style="padding:12px">';for(const g of vg){const p=g.t?Math.round(g.a/g.t*100):0;b+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)"><div style="width:54px;font-size:.82rem;font-weight:700;color:var(--navy)">Yr '+g.grade+'</div><div style="flex:1">'+pbar(p)+'</div><div style="font-size:.76rem;color:var(--muted);width:76px;text-align:right">'+g.a+'/'+g.t+(g.r?'  <span style="color:var(--rose)">⚑'+g.r+'</span>':'')+'</div></div>';}b+='</div>';}}
@@ -1127,7 +1065,7 @@ let _pCtx=null;
 function renderLeaders(){
   restAF();
   const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender};
-  const ce=['grade','director','admin'].includes(u.role);
+  const ce=['grade','quad','director','admin'].includes(u.role);
   const sc=scopeS(actor,students);
   const aIds=new Set(allocations.map(a=>a.sid));
   const activeStudents=sc.filter(s=>isActive(s));
@@ -1159,9 +1097,6 @@ function renderLeaders(){
     b+='<div class="warnbox">'+IC.alert.replace('<svg ','<svg style="width:14px;height:14px;stroke:var(--amber);fill:none;stroke-width:2;vertical-align:middle;margin-right:5px" ')+'<strong>'+pendingActive+' active student'+(pendingActive!==1?'s':'')+' need a leader</strong> — attended ≥2 events. Tap <strong>+ Add</strong> on any card below.</div>';
   else if(sc.length>0)
     b+='<div class="callbox">'+IC.check.replace('<svg ','<svg style="width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5;vertical-align:middle;margin-right:5px" ')+' All active students have a leader.</div>';
-
-  if(u.role==='quad')
-    b+='<div class="infobox">'+IC.info.replace('<svg ','<svg style="width:14px;height:14px;stroke:var(--blue);fill:none;stroke-width:2;vertical-align:middle;margin-right:5px" ')+' View-only — contact a grade login to make changes.</div>';
 
   // Grade filter chips — quad sees their bracket; director/admin see all
   if(lGrades.length){
@@ -1261,11 +1196,17 @@ function renderAllocate(){go('leaders');}
 
 function showAddL(){
   const u=S.user;
-  const gcbs=[7,8,9,10,11,12].map(g=>'<label style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><input type="checkbox" value="'+g+'" class="gcb"'+(u.role==='grade'&&u.grade===g?' checked disabled':'')+'>Year '+g+'</label>').join('');
+  // Forced gender: quad → its gender; gendered grade account → its gender
+  const forcedGender=u.role==='quad'?quadGender(u.quad):(u.role==='grade'?(u.gender||null):null);
+  const yrs=u.role==='quad'?quadGrades(u.quad):[7,8,9,10,11,12];
+  const gcbs=yrs.map(g=>'<label style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><input type="checkbox" value="'+g+'" class="gcb"'+(u.role==='grade'&&u.grade===g?' checked disabled':'')+'>Year '+g+'</label>').join('');
+  const genderField=forcedGender
+    ?'<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg" disabled><option value="'+forcedGender+'" selected>'+(forcedGender==='female'?'Female':'Male')+'</option></select></div>'
+    :'<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="">Any gender</option><option value="female">Female</option><option value="male">Male</option></select></div>';
   modal('<div class="mh"></div><div class="mt">Add Leader</div><div id="le"></div>'
     +'<div class="fg"><label class="fl">Full Name *</label><input class="fi" id="ln" placeholder="e.g. Sarah Mitchell" autofocus></div>'
-    +'<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="">Any gender</option><option value="female">Female</option><option value="male">Male</option></select></div>'
-    +(u.role!=='grade'?'<div class="fg"><label class="fl">Year Focus (leave blank = all)</label>'+gcbs+'</div>':'<div class="infobox" style="margin-bottom:12px">Auto-scoped to Year '+u.grade+'</div>')
+    +genderField
+    +(u.role==='grade'?'<div class="infobox" style="margin-bottom:12px">Auto-scoped to Year '+u.grade+(forcedGender?(' '+(forcedGender==='female'?'Girls':'Boys')):'')+'</div>':'<div class="fg"><label class="fl">Year Focus'+(u.role==='quad'?' ('+QL[u.quad]+')':' (leave blank = all)')+'</label>'+gcbs+'</div>')
     +'<div style="display:flex;gap:8px;margin-top:4px"><button class="btn bp" style="flex:1" onclick="subAddL()">Add Leader</button><button class="btn bs" onclick="closeM()">Cancel</button></div>');
 }
 
@@ -1273,7 +1214,9 @@ function subAddL(){
   const nm=document.getElementById('ln').value.trim(),gd=document.getElementById('lg').value||null,gr=[...document.querySelectorAll('.gcb:checked')].map(e=>parseInt(e.value));
   if(!nm){document.getElementById('le').innerHTML='<div class="al_ ale">Name required</div>';return;}
   const u=S.user;
-  leaders.push({id:uid(),fn:nm,gender:gd,grades:u.role==='grade'?[u.grade]:gr,g:u.role==='grade'?u.grade:null,active:true});
+  // Quad: default to whole bracket if no specific years ticked
+  const grades=u.role==='grade'?[u.grade]:(gr.length?gr:(u.role==='quad'?quadGrades(u.quad):[]));
+  leaders.push({id:uid(),fn:nm,gender:gd,grades,g:u.role==='grade'?u.grade:null,active:true});
   persist();closeM();toast('Leader added');renderLeaders();
 }
 
@@ -1310,8 +1253,10 @@ function openPicker(lid){
   const defaultPool=allSameGender.filter(s=>l.grades.length===0||l.grades.includes(s.grade));
   const done=new Set(allocations.filter(a=>a.lid===lid).map(a=>a.sid));
   _pCtx={lid,done,l,defaultPool,allSameGender};
-  const modalH='<div class="mh"></div>'
-    +'<div class="mt">Add Students → '+l.fn+'</div>'
+  const modalH='<div style="position:sticky;top:0;z-index:5;background:var(--card);margin:-18px -16px 10px;padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px">'
+    +'<div class="mt" style="margin:0;flex:1;min-width:0">Add Students → '+l.fn+'</div>'
+    +'<button onclick="closeM()" aria-label="Close" style="flex:none;background:var(--paper);border:1px solid var(--line);border-radius:999px;width:32px;height:32px;font-size:1.1rem;line-height:1;color:var(--muted);cursor:pointer">✕</button>'
+    +'</div>'
     +'<div class="srch">'+IC.search.replace('<svg ','<svg ')+'<input id="pq" placeholder="Search any '+( l.gender||'student')+'…" oninput="fPicker()" autofocus></div>'
     +'<div style="display:flex;gap:8px;margin-bottom:8px">'
     +'<select class="fs" id="p-filter" onchange="fPicker()" style="flex:1;font-size:.82rem;padding:8px 10px">'
@@ -1362,7 +1307,7 @@ function fPicker(){
   let h='';
   if(asgn.length){
     h+='<div class="psec">'+IC.check.replace('<svg ','<svg style="width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2.5;vertical-align:middle;margin-right:3px" ')+' Already assigned ('+asgn.length+')</div>';
-    for(const s of asgn){h+='<div class="pi done"><div class="av '+(s.gender==='female'?'f':'m')+'" style="width:34px;height:34px;font-size:.78rem;flex:none">'+s.fn.charAt(0)+'</div><div><div style="font-size:.88rem;font-weight:600">'+s.fn+' '+s.ln+'</div><div style="font-size:.72rem;color:var(--muted)">Yr '+(s.grade||'—')+' · '+s.gender+'</div></div></div>';}
+    for(const s of asgn){h+='<div class="pi done"><div class="av '+(s.gender==='female'?'f':'m')+'" style="width:34px;height:34px;font-size:.78rem;flex:none">'+s.fn.charAt(0)+'</div><div style="flex:1;min-width:0"><div style="font-size:.88rem;font-weight:600">'+s.fn+' '+s.ln+'</div><div style="font-size:.72rem;color:var(--muted)">Yr '+(s.grade||'—')+' · '+s.gender+'</div></div><button onclick="remPick(\''+s.id+'\')" aria-label="Remove '+s.fn+'" title="Remove" style="flex:none;background:none;border:none;color:var(--rose);font-size:1.5rem;font-weight:700;line-height:1;cursor:pointer;padding:4px 10px">−</button></div>';}
   }
   if(active.length){
     h+='<div class="psec" style="background:#fffbeb">'+IC.star.replace('<svg ','<svg style="width:12px;height:12px;stroke:var(--amber);fill:var(--amber);vertical-align:middle;margin-right:3px" ')+' Active students ('+active.length+')</div>';
@@ -1376,6 +1321,7 @@ function fPicker(){
   const el=document.getElementById('plist');if(el)el.innerHTML=h;
 }
 function addPick(sid){if(!_pCtx)return;const u=S.user;if(allocations.find(a=>a.sid===sid&&a.lid===_pCtx.lid)){toast('Already assigned');return;}allocations.push({id:uid(),sid,lid:_pCtx.lid,role:u.role,at:new Date().toISOString()});persist();_pCtx.done.add(sid);fPicker();const s=students.find(x=>x.id===sid);if(s)toast(s.fn+' '+s.ln+' added to '+(_pCtx.l?_pCtx.l.fn:'leader'));}
+function remPick(sid){if(!_pCtx)return;allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===_pCtx.lid));persist();_pCtx.done.delete(sid);fPicker();const s=students.find(x=>x.id===sid);if(s)toast(s.fn+' '+s.ln+' removed from '+(_pCtx.l?_pCtx.l.fn:'leader'));}
 function remAU(sid,lid){allocations=allocations.filter(a=>!(a.sid===sid&&a.lid===lid));persist();renderLeaders();const s=students.find(x=>x.id===sid),l=leaders.find(x=>x.id===lid);undo('Removed '+(s?s.fn+' '+s.ln:'student')+' from '+(l?l.fn:'leader'),()=>{allocations.push({id:uid(),sid,lid,role:S.user.role,at:new Date().toISOString()});persist();renderLeaders();});}
 function expCSV(){const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender};const rows=[['Leader','Gender','Grades','Student','Grade','Gender','Fridays%','At Risk']];const sc=scopeS(actor,students);for(const a of allocations){const s=sc.find(x=>x.id===a.sid),l=leaders.find(x=>x.id===a.lid);if(!s||!l)continue;const p=s.sT>0?Math.round(s.sA/s.sT*100)+'%':'—';rows.push([l.fn,l.gender||'',l.grades.join(';'),s.fn+' '+s.ln,s.grade||'',s.gender,p,s.ar||'']);}const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const b=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='allocations.csv';a.click();URL.revokeObjectURL(url);toast('Exported '+rows.length+' rows');}
 
@@ -1846,7 +1792,7 @@ function renderTrends(){
         const grPrevAvg=grSc.filter(s=>s.psT>0).length
           ?Math.round(grSc.filter(s=>s.psT>0).reduce((s,x)=>s+x.psA,0)/Math.max(...grSc.filter(s=>s.psT>0).map(s=>s.psT))):0;
         const grHasPrev=grSc.some(s=>s.psT>0);
-        b+='<div class="sh_">Grade '+u.grade+'</div>';
+        b+='<div class="sh2">Grade '+u.grade+'</div>';
         b+='<div class="card" style="padding:14px;margin-bottom:10px">';
         const grAvgSess=grSc.length?Math.round(grSc.reduce((s,x)=>s+x.sA,0)/grSc.length):0;
         const grPrevAvgSess=grHasPrev?Math.round(grSc.filter(s=>s.psT>0).reduce((s,x)=>s+x.psA,0)/grSc.length):0;
@@ -2029,6 +1975,8 @@ function renderTrends(){
       const isOpen=_trGradeOpen===gr;
       const showHdr=u.role!=='grade';
 
+      // Grade login: grade name as a large subheading ABOVE the box (like Overview)
+      if(!showHdr)b+='<div class="sh2">Grade '+gr+' Lifegroups</div>';
       b+='<div class="card" style="padding:12px;margin-bottom:8px">';
       if(showHdr){
         b+='<div style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:2px" onclick="_trGradeOpen='+(isOpen?'null':gr)+';renderTrends()">';
@@ -2036,8 +1984,6 @@ function renderTrends(){
         b+='<span style="font-size:.88rem;font-weight:700;color:var(--navy)">Year '+gr+'</span>';
         b+='<span style="font-size:.72rem;color:var(--muted);margin-left:4px">'+grEnrolled+' enrolled</span>';
         b+='</div>';
-      } else {
-        b+='<div style="font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:4px">Grade '+gr+' Lifegroups</div>';
       }
       const grWeeksRun=grLgs.length?Math.max(...grLgs.map(x=>x.weeksRun).filter(Boolean),0):0;
       const grAvgPerSess=grWeeksRun?Math.round(grTotAtt/grWeeksRun):0;
@@ -2050,18 +1996,20 @@ function renderTrends(){
       b+=grpBar(grUniq,grEnrolled);
       // Individual group rows — always shown for grade login; expandable for others
       if(!showHdr||isOpen){
-        b+='<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">';
+        b+='<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;padding-left:10px">';
+        b+='<div style="font-size:.56rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Individual lifegroups</div>';
         for(const lg of grLgs){
           const lgSc=allSc.filter(s=>s.grade===gr&&(lg.id.endsWith('a')?s.gender==='female':s.gender==='male'));
           const lgPrevUniq=lgSc.filter(s=>s.pgA>0).length;
           const lgPrevAvg=lgSc.filter(s=>s.pgT>0).length
             ?Math.round(lgSc.filter(s=>s.pgT>0).reduce((s,x)=>s+x.pgA,0)/lgSc.filter(s=>s.pgT>0).length):0;
           const lgHasPrev=lgSc.some(s=>s.pgT>0);
-          b+='<div style="padding:8px 0;border-bottom:1px solid var(--line)">';
+          // Nested individual group: indented, shaded, colour-accented, slightly smaller
+          b+='<div style="padding:8px 10px;margin:0 0 8px 6px;background:var(--paper);border-radius:8px;border-left:3px solid '+(lg.day==='Friday'?'var(--blue)':'var(--teal)')+'">';
           b+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-          b+='<div style="width:8px;height:8px;border-radius:50%;background:'+(lg.day==='Friday'?'var(--blue)':'var(--teal)')+';flex:none"></div>';
-          b+='<div style="font-size:.82rem;font-weight:600;color:var(--navy)">'+lg.name+'</div>';
-          b+='<span class="chip '+(lg.day==='Friday'?'ci':'cs')+'" style="font-size:.6rem;margin-left:auto">'+lg.day+'</span>';
+          b+='<div style="width:7px;height:7px;border-radius:50%;background:'+(lg.day==='Friday'?'var(--blue)':'var(--teal)')+';flex:none"></div>';
+          b+='<div style="font-size:.78rem;font-weight:700;color:var(--navy)">'+lg.name+'</div>';
+          b+='<span class="chip '+(lg.day==='Friday'?'ci':'cs')+'" style="font-size:.58rem;margin-left:auto">'+lg.day+'</span>';
           b+='</div>';
           const lgPrevSc=lgSc.filter(s=>s.pgT>0);
           const lgPrevAvgPerSess=lgPrevSc.length?Math.round(lgPrevSc.reduce((s,x)=>s+x.pgA,0)/Math.max(1,...lgPrevSc.map(s=>s.pgT))):0;
@@ -2108,6 +2056,8 @@ function exportTrends(){
 
 // ── LEADER SELF-VIEW ──────────────────────────────────────
 let _lvLeader=null; // selected leader id
+let _lvF={g:new Set(),gd:new Set()}; // My Students leader-dropdown filters (grade / gender)
+function tLvF(t,v){const set=t==='g'?_lvF.g:_lvF.gd;set.has(v)?set.delete(v):set.add(v);renderLeaderView();}
 
 function renderLeaderView(){
   const u=S.user,actor={role:u.role,grade:u.grade,quad:u.quad,gender:u.gender};
@@ -2116,10 +2066,22 @@ function renderLeaderView(){
   let b='<div class="ph"><div class="pt">My Students</div><div class="ps">Your leader view — student contacts &amp; attendance</div></div>';
   if(!myLeaders.length){b+='<div class="empty">'+IC.users.replace('<svg ','<svg ')+'<p>No leaders in scope</p></div>';setApp(shell(b));return;}
 
+  // Filter buttons (narrow which leaders appear in the dropdown) — quad: grades in bracket; director/admin: grades + gender
+  const lvGrades=u.role==='quad'?quadGrades(u.quad):['director','admin'].includes(u.role)?[7,8,9,10,11,12]:[];
+  const lvGenders=['director','admin'].includes(u.role)?['female','male']:[];
+  if(lvGrades.length)b+='<div class="fr_2"><span style="font-size:.7rem;font-weight:800;color:var(--muted)">YEAR</span>'+lvGrades.map(g=>'<button class="fc'+(_lvF.g.has(g)?' on':'')+'" onclick="tLvF(\'g\','+g+')">'+g+'</button>').join('')+((_lvF.g.size||_lvF.gd.size)?'<button class="fc" onclick="_lvF.g.clear();_lvF.gd.clear();renderLeaderView()" style="opacity:.6">Clear</button>':'')+'</div>';
+  if(lvGenders.length)b+='<div class="fr_2"><span style="font-size:.7rem;font-weight:800;color:var(--muted)">GENDER</span>'+lvGenders.map(g=>'<button class="fc'+(_lvF.gd.has(g)?' on':'')+'" onclick="tLvF(\'gd\',\''+g+'\')">'+(g==='female'?'Girls':'Boys')+'</button>').join('')+'</div>';
+
+  // Apply filters to the leader list that populates the dropdown
+  let fLeaders=myLeaders;
+  if(_lvF.g.size)fLeaders=fLeaders.filter(l=>l.grades.some(g=>_lvF.g.has(g)));
+  if(_lvF.gd.size)fLeaders=fLeaders.filter(l=>!l.gender||_lvF.gd.has(l.gender));
+  if(_lvLeader&&!fLeaders.find(l=>l.id===_lvLeader))_lvLeader=null;
+
   // Leader picker
   b+='<div class="fg"><label class="fl">I am…</label><select class="fs" id="lv-sel" onchange="_lvLeader=this.value;renderLeaderView()">';
-  b+='<option value="">— Choose a leader —</option>';
-  for(const l of myLeaders){b+='<option value="'+l.id+'"'+(_lvLeader===l.id?' selected':'')+'>'+l.fn+' (Yr '+l.grades.join(', ')+' · '+(l.gender||'any gender')+')</option>';}
+  b+='<option value="">— Choose a leader ('+fLeaders.length+') —</option>';
+  for(const l of fLeaders){b+='<option value="'+l.id+'"'+(_lvLeader===l.id?' selected':'')+'>'+l.fn+' (Yr '+l.grades.join(', ')+' · '+(l.gender||'any gender')+')</option>';}
   b+='</select></div>';
 
   if(!_lvLeader){setApp(shell(b));return;}
@@ -2143,21 +2105,26 @@ function renderLeaderView(){
     const gp=s.gT>0?Math.round(s.gA/s.gT*100):null;
     const avClsS=s.gender==='female'?'f':'m';
     const pips=(s.hist||[]).slice(-6).map(v=>'<span class="sc-pip '+(v?'pip-y':'pip-n')+'"></span>').join('');
+    const lgArr=glHist(s).slice(-6);
+    const lgpips=lgArr.map(v=>'<span class="sc-pip" style="background:'+(v?'var(--teal)':'#e2e8f0')+'"></span>').join('');
     b+='<div class="sc-row">';
     b+='<div class="av '+avClsS+'" style="width:40px;height:40px;font-size:.9rem;flex:none">'+s.fn.charAt(0)+'</div>';
     b+='<div class="sc-detail">';
-    b+='<div class="sc-name">'+s.fn+' '+s.ln+'</div>';
-    b+='<div class="sc-meta">Yr '+s.grade+' · '+s.gender+(s.bday?' · B: '+s.bday:'')+'</div>';
+    // Name + Yr/gender/bday on one line
+    b+='<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="sc-name">'+s.fn+' '+s.ln+'</span><span class="sc-meta" style="margin:0">Yr '+s.grade+' · '+s.gender+(s.bday?' · '+fmtBday(s.bday):'')+'</span></div>';
     // Attendance summary
     b+='<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">';
     if(p!==null){const pc=p>=70?'var(--green)':p>=40?'var(--amber)':'var(--rose)';b+='<span style="font-size:.8rem;font-weight:700;color:'+pc+'">Fridays '+p+'%</span><span style="font-size:.72rem;color:var(--muted)">('+s.sA+'/'+s.sT+')</span>';}
     if(gp!==null)b+='<span style="font-size:.8rem;font-weight:700;color:var(--teal)">Lifegroup '+gp+'%</span>';
     b+='</div>';
-    // Recent attendance pips
+    // Recent attendance dots — Fridays (green) then Lifegroup (teal)
     if(pips)b+='<div class="sc-att" style="margin-top:6px">'+pips+'<span style="font-size:.62rem;color:var(--muted);margin-left:4px">last 6 Fridays</span></div>';
-    // Contact
-    if(s.ph)b+='<div class="sc-phone" style="margin-top:4px">'+IC.phone.replace('<svg ','<svg style="width:12px;height:12px;stroke:var(--blue);fill:none;stroke-width:2;vertical-align:middle;margin-right:3px" ')+'<a href="tel:'+s.ph+'">'+s.ph+'</a></div>';
-    if(s.pp)b+='<div class="sc-phone" style="margin-top:2px"><span style="font-size:.68rem;color:var(--muted)">Parent: </span><a href="tel:'+s.pp+'">'+s.pp+'</a></div>';
+    if(lgpips)b+='<div class="sc-att" style="margin-top:4px">'+lgpips+'<span style="font-size:.62rem;color:var(--muted);margin-left:4px">last '+lgArr.length+' lifegroups</span></div>';
+    // Contact — student mobile + parent number on one line
+    let contact='';
+    if(s.ph)contact+=IC.phone.replace('<svg ','<svg style="width:12px;height:12px;stroke:var(--blue);fill:none;stroke-width:2;vertical-align:middle;margin-right:3px" ')+'<a href="tel:'+s.ph+'">'+s.ph+'</a>';
+    if(s.pp)contact+='<span style="font-size:.68rem;color:var(--muted);margin-left:10px">Parent:</span> <a href="tel:'+s.pp+'">'+s.pp+'</a>';
+    if(contact)b+='<div class="sc-phone" style="margin-top:4px">'+contact+'</div>';
     b+='</div></div>';
   }
   setApp(shell(b));
@@ -2326,12 +2293,12 @@ function renderAdmin(){
   setApp(shell(b));
 }
 function saveSett(){auditLog.push({action:'settings-update',by:S.user.n,at:new Date().toISOString(),detail:'Settings updated'});settings.ministryName=document.getElementById('s-mn').value.trim();settings.serviceName=document.getElementById('s-sv').value.trim();settings.lifegroupName=document.getElementById('s-gn').value.trim();settings.regN=+document.getElementById('s-rn').value||3;settings.regD=+document.getElementById('s-rd').value||4;settings.riskN=+document.getElementById('s-an').value||1;settings.riskD=+document.getElementById('s-ad').value||2;persist();toast('Settings saved');}
-function showAU(){modal('<div class="mh"></div><div class="mt">Add Account</div><div id="ue"></div><div class="fg"><label class="fl">Display Name</label><input class="fi" id="un"></div><div class="fg"><label class="fl">Email</label><input class="fi" id="ue2" type="email"></div><div class="fg"><label class="fl">Role</label><select class="fs" id="ur" onchange="tUR()"><option value="grade">Grade</option><option value="quad">Quad</option><option value="director">Director</option><option value="admin">Admin</option></select></div><div id="ugf" class="fg"><label class="fl">Year Group</label><select class="fs" id="ug">'+[7,8,9,10,11,12].map(g=>'<option value="'+g+'">Year '+g+'</option>').join('')+'</select></div><div id="uqf" class="fg" style="display:none"><label class="fl">Quad</label><select class="fs" id="uq">'+Object.entries(QL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div><div style="display:flex;gap:8px"><button class="btn bp" style="flex:1" onclick="subAU()">Create Account</button><button class="btn bs" onclick="closeM()">Cancel</button></div>');sugE();}
-function tUR(){const r=document.getElementById('ur').value;document.getElementById('ugf').style.display=r==='grade'?'block':'none';document.getElementById('uqf').style.display=r==='quad'?'block':'none';sugE();}
-function sugE(){const r=document.getElementById('ur')?.value,el=document.getElementById('ue2');if(!el||!r)return;const g=document.getElementById('ug')?.value,q=document.getElementById('uq')?.value;if(r==='grade')el.value='grade'+g+'@youth.ministry';else if(r==='quad')el.value=q+'@youth.ministry';else if(r==='director')el.value='director@youth.ministry';else el.value='admin2@youth.ministry';}
-function subAU(){const nm=document.getElementById('un').value.trim(),em=document.getElementById('ue2').value.trim(),r=document.getElementById('ur').value;if(!nm||!em){document.getElementById('ue').innerHTML='<div class="al_ ale">All fields required</div>';return;}if(users.find(u=>u.email===em)){document.getElementById('ue').innerHTML='<div class="al_ ale">Email already in use</div>';return;}const gd=r==='grade'?parseInt(document.getElementById('ug').value):null,qd=r==='quad'?document.getElementById('uq').value:null;users.push({id:uid(),n:nm,email:em,role:r,grade:gd,quad:qd,active:true});closeM();toast('Account created');renderAdmin();}
-function showEU(id){const u=users.find(x=>x.id===id);if(!u)return;modal('<div class="mh"></div><div class="mt">Edit Account</div><div id="ue"></div><div class="fg"><label class="fl">Display Name</label><input class="fi" id="un" value="'+u.n+'"></div><div class="fg"><label class="fl">Role</label><select class="fs" id="ur" onchange="tUR()">'+['grade','quad','director','admin'].map(r=>'<option value="'+r+'"'+(r===u.role?' selected':'')+'>'+r.charAt(0).toUpperCase()+r.slice(1)+'</option>').join('')+'</select></div><div id="ugf" class="fg" style="'+(u.role!=='grade'?'display:none':'')+'"><label class="fl">Year Group</label><select class="fs" id="ug">'+[7,8,9,10,11,12].map(g=>'<option value="'+g+'"'+(g===u.grade?' selected':'')+'>Year '+g+'</option>').join('')+'</select></div><div id="uqf" class="fg" style="'+(u.role!=='quad'?'display:none':'')+'"><label class="fl">Quad</label><select class="fs" id="uq">'+Object.entries(QL).map(([k,v])=>'<option value="'+k+'"'+(k===u.quad?' selected':'')+'>'+v+'</option>').join('')+'</select></div><div style="display:flex;gap:8px"><button class="btn bp" style="flex:1" onclick="subEU(\''+id+'\')">Save Changes</button><button class="btn bs" onclick="closeM()">Cancel</button></div>');}
-function subEU(id){const nm=document.getElementById('un').value.trim(),r=document.getElementById('ur').value,gd=r==='grade'?parseInt(document.getElementById('ug').value):null,qd=r==='quad'?document.getElementById('uq').value:null;const idx=users.findIndex(u=>u.id===id);if(idx>=0)users[idx]={...users[idx],n:nm,role:r,grade:gd,quad:qd};closeM();toast('Account updated');renderAdmin();}
+function showAU(){modal('<div class="mh"></div><div class="mt">Add Account</div><div id="ue"></div><div class="fg"><label class="fl">Display Name</label><input class="fi" id="un"></div><div class="fg"><label class="fl">Email</label><input class="fi" id="ue2" type="email"></div><div class="fg"><label class="fl">Role</label><select class="fs" id="ur" onchange="tUR()"><option value="grade">Grade</option><option value="quad">Quad</option><option value="director">Director</option><option value="admin">Admin</option></select></div><div id="ugf" class="fg"><label class="fl">Year Group</label><select class="fs" id="ug">'+[7,8,9,10,11,12].map(g=>'<option value="'+g+'">Year '+g+'</option>').join('')+'</select></div><div id="ugdf" class="fg"><label class="fl">Gender (which students they see)</label><select class="fs" id="ugd" onchange="sugE()"><option value="">All</option><option value="female">Girls</option><option value="male">Boys</option></select></div><div id="uqf" class="fg" style="display:none"><label class="fl">Quad</label><select class="fs" id="uq">'+Object.entries(QL).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></div><div style="display:flex;gap:8px"><button class="btn bp" style="flex:1" onclick="subAU()">Create Account</button><button class="btn bs" onclick="closeM()">Cancel</button></div>');sugE();}
+function tUR(){const r=document.getElementById('ur').value;document.getElementById('ugf').style.display=r==='grade'?'block':'none';const gdf=document.getElementById('ugdf');if(gdf)gdf.style.display=r==='grade'?'block':'none';document.getElementById('uqf').style.display=r==='quad'?'block':'none';sugE();}
+function sugE(){const r=document.getElementById('ur')?.value,el=document.getElementById('ue2');if(!el||!r)return;const g=document.getElementById('ug')?.value,q=document.getElementById('uq')?.value,gd=document.getElementById('ugd')?.value;if(r==='grade')el.value='grade'+g+(gd==='female'?'f':gd==='male'?'m':'')+'@youth.ministry';else if(r==='quad')el.value=q+'@youth.ministry';else if(r==='director')el.value='director@youth.ministry';else el.value='admin2@youth.ministry';}
+function subAU(){const nm=document.getElementById('un').value.trim(),em=document.getElementById('ue2').value.trim(),r=document.getElementById('ur').value;if(!nm||!em){document.getElementById('ue').innerHTML='<div class="al_ ale">All fields required</div>';return;}if(users.find(u=>u.email===em)){document.getElementById('ue').innerHTML='<div class="al_ ale">Email already in use</div>';return;}const gd=r==='grade'?parseInt(document.getElementById('ug').value):null,qd=r==='quad'?document.getElementById('uq').value:null,gn=r==='grade'?(document.getElementById('ugd')?.value||null):null;users.push({id:uid(),n:nm,email:em,role:r,grade:gd,gender:gn,quad:qd,active:true});closeM();toast('Account created');renderAdmin();}
+function showEU(id){const u=users.find(x=>x.id===id);if(!u)return;modal('<div class="mh"></div><div class="mt">Edit Account</div><div id="ue"></div><div class="fg"><label class="fl">Display Name</label><input class="fi" id="un" value="'+u.n+'"></div><div class="fg"><label class="fl">Role</label><select class="fs" id="ur" onchange="tUR()">'+['grade','quad','director','admin'].map(r=>'<option value="'+r+'"'+(r===u.role?' selected':'')+'>'+r.charAt(0).toUpperCase()+r.slice(1)+'</option>').join('')+'</select></div><div id="ugf" class="fg" style="'+(u.role!=='grade'?'display:none':'')+'"><label class="fl">Year Group</label><select class="fs" id="ug">'+[7,8,9,10,11,12].map(g=>'<option value="'+g+'"'+(g===u.grade?' selected':'')+'>Year '+g+'</option>').join('')+'</select></div><div id="ugdf" class="fg" style="'+(u.role!=='grade'?'display:none':'')+'"><label class="fl">Gender (which students they see)</label><select class="fs" id="ugd"><option value=""'+(!u.gender?' selected':'')+'>All</option><option value="female"'+(u.gender==='female'?' selected':'')+'>Girls</option><option value="male"'+(u.gender==='male'?' selected':'')+'>Boys</option></select></div><div id="uqf" class="fg" style="'+(u.role!=='quad'?'display:none':'')+'"><label class="fl">Quad</label><select class="fs" id="uq">'+Object.entries(QL).map(([k,v])=>'<option value="'+k+'"'+(k===u.quad?' selected':'')+'>'+v+'</option>').join('')+'</select></div><div style="display:flex;gap:8px"><button class="btn bp" style="flex:1" onclick="subEU(\''+id+'\')">Save Changes</button><button class="btn bs" onclick="closeM()">Cancel</button></div>');}
+function subEU(id){const nm=document.getElementById('un').value.trim(),r=document.getElementById('ur').value,gd=r==='grade'?parseInt(document.getElementById('ug').value):null,qd=r==='quad'?document.getElementById('uq').value:null,gn=r==='grade'?(document.getElementById('ugd')?.value||null):null;const idx=users.findIndex(u=>u.id===id);if(idx>=0)users[idx]={...users[idx],n:nm,role:r,grade:gd,gender:gn,quad:qd};closeM();toast('Account updated');renderAdmin();}
 function toggleU(id){const idx=users.findIndex(u=>u.id===id);if(idx>=0)users[idx].active=!users[idx].active;toast(users[idx]?.active?'Account activated':'Account deactivated');renderAdmin();}
 function delU(id){users=users.filter(u=>u.id!==id);toast('Account deleted');renderAdmin();}
 
