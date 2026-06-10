@@ -79,9 +79,9 @@ Sessions are derived from schedule items with `isCheckInPoint: true`. There is n
 | File | Purpose |
 |------|---------|
 | `public/index.html` | Implementation-ready SPA — calls the Express backend via relative API paths |
-| `demo-site/camp-platform.html` | Standalone offline demo — all API calls handled by an embedded MockAPI. This is the canonical demo source. |
+| `../youth app demo/camp-platform.html` | Standalone offline demo — all API calls handled by an embedded MockAPI. This is the canonical demo source. |
 
-`demo-site/` is the static demo site deployed to Vercel (`yc-camp-demo.vercel.app`): the landing `index.html`, `camp-platform.html`, `exec-presentation.html`, and `assets/`. Vercel serves this folder via the root `vercel.json` (`outputDirectory: demo-site`, no build).
+> **Demos moved out of this repo.** All demo HTML (landing `index.html`, `camp-platform.html`, the `allocation-*` demos, `exec-presentation.html`, `suite-briefing.html`, `training.html`, `assets/`) now lives in the sibling **`youth app demo/`** folder, which is the Vercel deploy source for `yc-camp-demo`. Deploy with `vercel deploy --prod --yes` **from `youth app demo/`** (CLI; the `.vercel` link lives there). This repo's Git auto-deploy has been disconnected, so **`git push` no longer deploys**. This repo keeps only the real camp backend (`src/`, `public/`, `docs/`).
 
 Both demo files share identical UI code. The mode badge in the header shows **PRE-CAMP** (amber) or **AT CAMP** (green) at all times.
 
