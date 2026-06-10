@@ -435,9 +435,7 @@ async function renderHomeAtCamp(){
   tiles.push(`<div class="tile" onclick="go('devotional')"><div class="ic">${ic('book')}</div><div class="l">Devotional</div></div>`);
   if(ACTOR.role==='church')tiles.push(`<div class="tile" style="cursor:default"><div class="ic">⌂</div><div class="l">Your Accommodation</div><div class="sub" style="font-size:.62rem;margin-top:2px">${esc(myAccom)}</div></div>`);
   tiles.push(`<div class="tile" onclick="go('faq')"><div class="ic">${ic('help')}</div><div class="l">FAQ</div></div>`);
-  const now=Date.now();
-  const live=(feed||[]).filter(n=>!n.scheduledFor||new Date(n.scheduledFor).getTime()<=now);
-  const notices=live.slice(0,3);
+  const notices=(feed||[]).slice(0,3);
   const noticesHtml=notices.length?notices.map(noticeCard).join(''):'<p class="note-hint">All caught up — no notices right now.</p>';
   const html=`<div class="hero"><div class="k">${esc(SETTINGS?.campName||'Youth Camp')} · Live</div>
     <h2>Hi ${esc(d.greetingName||ACTOR.displayName)}</h2>
