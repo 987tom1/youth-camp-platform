@@ -592,22 +592,27 @@ function _ciLabel(session){
 /* ===== DAILY CHECK-IN ===== */
 RENDER.checkin=async function renderCheckin(){
   if(SESSIONS.length===0)SESSIONS=await api('/checkin/sessions');
-  if(!SEL_SESSION){const cur=await api('/checkin/sessions/current').catch(()=>null);SEL_SESSION=(cur&&cur.id)||SESSIONS[0]?.id;}
+  if(!SEL_SESSION){const cur=await api('/checkin/sessions/current').catch(()=>null);SEL_SESSION=(cur&&cur.id)||(SESSIONS[0]&&SESSIONS[0].id);}
   if(!SEL_SESSION){paint('checkin','<p class="note-hint">No check-in sessions configured. Set camp dates in admin settings.</p>','Daily Check-in','');return;}
-  const st=await api('/checkin/sessions/'+SEL_SESSION+'/status');
-  const DUE=st.missingCount||0;
+  // Real status: {session, roster:[{camperId,firstName,lastName,church,zone,checkedIn}], checkedInCount, totalCount}.
+  // Roster carries no gender/grade — enrich from /campers so those filters work.
+  const [st,campers]=await Promise.all([api('/checkin/sessions/'+SEL_SESSION+'/status'),api('/campers').catch(()=>[])]);
+  const cmap={};(campers||[]).forEach(c=>{cmap[c.id]={gender:c.gender,grade:c.grade};});
+  const roster=(st.roster||[]).map(r=>({id:r.camperId,name:(r.firstName+' '+r.lastName).trim(),church:r.church,zone:r.zone,present:!!r.checkedIn,gender:(cmap[r.camperId]||{}).gender,grade:(cmap[r.camperId]||{}).grade}));
+  const DUE=(st.totalCount!=null?st.totalCount:roster.length)-(st.checkedInCount!=null?st.checkedInCount:roster.filter(c=>c.present).length);
   const tb=document.getElementById('tabDue');if(tb){if(DUE>0){tb.style.display='grid';tb.textContent=DUE;}else tb.style.display='none';}
   const showZone=['director','admin'].includes(ACTOR.role);
   const showChurch=['zoneLeader','director','admin'].includes(ACTOR.role);
-  const zonesOpt=['all',...new Set(st.campers.map(c=>c.zone))].filter((v,i,a)=>a.indexOf(v)===i);
-  let churchPool=FILTER.zone!=='all'?st.campers.filter(c=>c.zone===FILTER.zone):st.campers;
-  const churchesOpt=['all',...new Set(churchPool.map(c=>c.churchName))].filter((v,i,a)=>a.indexOf(v)===i);
-  let list=st.campers.filter(c=>(FILTER.gender==='all'||c.gender===FILTER.gender)&&
+  const zonesOpt=['all',...new Set(roster.map(c=>c.zone))].filter((v,i,a)=>a.indexOf(v)===i);
+  let churchPool=FILTER.zone!=='all'?roster.filter(c=>c.zone===FILTER.zone):roster;
+  const churchesOpt=['all',...new Set(churchPool.map(c=>c.church))].filter((v,i,a)=>a.indexOf(v)===i);
+  let list=roster.filter(c=>(FILTER.gender==='all'||c.gender===FILTER.gender)&&
     (FILTER.grade==='all'||String(c.grade)===FILTER.grade)&&
     (FILTER.zone==='all'||c.zone===FILTER.zone)&&
-    (FILTER.church==='all'||c.churchName===FILTER.church));
+    (FILTER.church==='all'||c.church===FILTER.church));
   list.sort((a,b)=>a.present-b.present);
   const dueShown=list.filter(c=>!c.present).length,presentShown=list.length-dueShown;
+  const label=_ciLabel(st.session||SESSIONS.find(x=>x.id===SEL_SESSION)||{});
   const dayBtns=SESSIONS.map(s=>`<button class="${s.id===SEL_SESSION?'on':''}" onclick="selDay('${s.id}')">${esc(_ciLabel(s))}</button>`).join('');
   const gradeOpts=['all',...GRADES].map(g=>`<option value="${g}" ${String(g)===FILTER.grade?'selected':''}>${g==='all'?'All grades':'Grade '+g}</option>`).join('');
   const zoneSelOpts=zonesOpt.map(z=>`<option value="${z}" ${z===FILTER.zone?'selected':''}>${z==='all'?'All zones':z+' Zone'}</option>`).join('');
@@ -619,16 +624,16 @@ RENDER.checkin=async function renderCheckin(){
       <select onchange="setFilter('grade',this.value)">${gradeOpts}</select>
     </div>
     <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-      <div><div class="nm">${esc(_ciLabel(SESSIONS.find(x=>x.id===SEL_SESSION)||{day:'',startTime:'09:00',label:st.sessionLabel}))} check-in</div><div class="sub">${presentShown}/${list.length} present${list.length!==st.total?' · filtered':''}</div></div>
-      ${dueShown>0?`<div style="text-align:right"><div style="font-weight:800;font-size:1.4rem;line-height:1;color:#b45309">${dueShown}</div><div class="sub" style="font-size:.68rem">not yet checked in${list.length!==st.total?' (filtered)':''}</div></div>`:`<span class="pill ok">All checked in ✓</span>`}
+      <div><div class="nm">${esc(label)} check-in</div><div class="sub">${presentShown}/${list.length} present${list.length!==roster.length?' · filtered':''}</div></div>
+      ${dueShown>0?`<div style="text-align:right"><div style="font-weight:800;font-size:1.4rem;line-height:1;color:#b45309">${dueShown}</div><div class="sub" style="font-size:.68rem">not yet checked in${list.length!==roster.length?' (filtered)':''}</div></div>`:`<span class="pill ok">All checked in ✓</span>`}
     </div>
-    ${list.map(c=>`<div class="row ${c.present?'checked':''}"><div class="av">${initials(c.name)}</div>
-      <div style="flex:1;min-width:0"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c.location||c.zone)} · Yr ${c.grade||'—'}</div></div>
+    ${list.map(c=>`<div class="row ${c.present?'checked':''}"><div class="av ${esc(c.gender||'')}">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0"><div class="nm">${esc(c.name)}</div><div class="sub">${esc(c.church||c.zone)}${c.grade?' · Yr '+c.grade:''}</div></div>
       <button class="btn ghost sm" onclick="notePrompt('${c.id}','${esc(c.name)}')">＋ note</button>
       ${c.present?`<button class="btn alt sm" onclick="doCheck('${c.id}','out')">✓ in</button>`:`<button class="btn sm" onclick="doCheck('${c.id}','in')">Check in</button>`}
     </div>`).join('')}
     <p class="note-hint">Notes are visible to zone leaders &amp; directors only.</p>`;
-  paint('checkin',html,'Daily Check-in',st.sessionLabel);
+  paint('checkin',html,'Daily Check-in',label);
 };
 function selDay(id){SEL_SESSION=id;RENDER.checkin();}
 function setFilter(k,v){FILTER[k]=v;if(k==='zone')FILTER.church='all';RENDER.checkin();}
@@ -653,7 +658,9 @@ function reviewNote(camperId,name){
     <button class="btn ghost" style="margin-top:6px" onclick="notePrompt('${camperId}','${esc(name)}')">‹ Edit</button>`);
 }
 async function confirmNote(camperId){const d=window._draft;if(!d)return;
-  try{await api('/notes',{method:'POST',body:{camperId,body:d.body,authorName:d.leader,sessionId:SEL_SESSION}});window._draft=null;closeModal();toast('Note submitted ✓');}catch(e){toast(e.message);}}
+  // Backend attributes the note to the logged-in actor; the typed leader name is folded into the body.
+  const body=d.leader&&d.leader!==ACTOR.displayName?`${d.body}\n— logged by ${d.leader}`:d.body;
+  try{await api('/notes',{method:'POST',body:{camperId,body,sessionId:SEL_SESSION,category:'note'}});window._draft=null;closeModal();toast('Note submitted ✓');}catch(e){toast(e.message);}}
 
 /* ===== SEARCH ===== */
 RENDER.search=function(){
@@ -663,19 +670,21 @@ let sT;function doSearch(v){clearTimeout(sT);sT=setTimeout(()=>runSearch(v),200)
 async function runSearch(v){const box=document.getElementById('results');if(!box)return;
   if(!v.trim()){box.innerHTML='<p class="note-hint">Type a name to find any camper or leader across the camp.</p>';return;}
   try{const res=await api('/search?q='+encodeURIComponent(v));
-    box.innerHTML=res.length?res.map(r=>`<div class="findcard"><div style="display:flex;justify-content:space-between"><b>${esc(r.name)}</b><span class="pill info">${esc(r.church)}</span></div>
-      <div class="sub" style="margin:3px 0">${esc(r.zone)} · Grade ${r.grade||'—'}</div>
-      ${(r.medicalFlags||[]).map(m=>`<span class="med">${esc(m)}</span> `).join('')}
-      ${r.medicalRestricted?`<div class="sub" style="color:#b45309">⚠ Medical detail hidden (out of your scope)</div>`:''}
-      ${r.primaryContact?`<div class="kv"><span class="k">Primary leader</span><span class="v">${esc(r.primaryContact.name)} · <span style="color:#2563eb">${esc(r.primaryContact.phone)}</span></span></div>`:''}
-      ${r.backupContact?`<div class="kv"><span class="k">Secondary leader</span><span class="v">${esc(r.backupContact.name)} · <span style="color:#2563eb">${esc(r.backupContact.phone)}</span></span></div>`:''}
-      ${!r.primaryContact?'<div class="sub" style="color:#b45309">No leader contact set — ask admin to add one.</div>':''}
+    box.innerHTML=res.length?res.map(r=>{const c=r.camper||{};const name=(c.firstName+' '+c.lastName).trim();
+      const contacts=r.contacts||[];const prim=contacts.find(x=>x.type==='primary');const back=contacts.find(x=>x.type==='backup');
+      const med=c.medicalConditions||[];
+      return `<div class="findcard"><div style="display:flex;justify-content:space-between"><b>${esc(name)}</b><span class="pill info">${esc(c.churchName||'')}</span></div>
+      <div class="sub" style="margin:3px 0">${esc(c.zone||'')} Zone · ${c.kind==='leader'?'Leader':'Grade '+(c.grade||'—')}</div>
+      ${med.map(m=>`<span class="med">${esc(m)}</span> `).join('')}
+      ${prim?`<div class="kv"><span class="k">Primary leader</span><span class="v">${esc(prim.name)} · <span style="color:#2563eb">${esc(prim.phone)}</span></span></div>`:''}
+      ${back?`<div class="kv"><span class="k">Secondary leader</span><span class="v">${esc(back.name)} · <span style="color:#2563eb">${esc(back.phone)}</span></span></div>`:''}
+      ${!prim&&!back?'<div class="sub" style="color:#b45309">No leader contact set — ask admin to add one.</div>':''}
       <div style="display:flex;gap:8px;margin-top:9px">
-        ${r.primaryContact?`<button class="btn sm" style="flex:1" onclick="reveal('${r.id}','primary')">☎︎ Call primary</button>`:''}
-        ${r.backupContact?`<button class="btn alt sm" style="flex:1" onclick="reveal('${r.id}','backup')">Secondary</button>`:''}
-      </div></div>`).join(''):'<p class="note-hint">No camper matches.</p>';
+        ${prim?`<button class="btn sm" style="flex:1" onclick="reveal('${c.id}','${esc(prim.role)}')">☎︎ Call primary</button>`:''}
+        ${back?`<button class="btn alt sm" style="flex:1" onclick="reveal('${c.id}','${esc(back.role)}')">Secondary</button>`:''}
+      </div></div>`;}).join(''):'<p class="note-hint">No camper matches.</p>';
   }catch(e){toast(e.message);}}
-async function reveal(id,which){try{const c=await api('/search/'+id+'/contact?which='+which);toast('☎︎ '+c.name+': '+c.phone);}catch(e){toast(e.message);}}
+async function reveal(id,role){try{const c=await api('/search/contact/'+id+'/'+encodeURIComponent(role));toast('☎︎ '+c.name+': '+c.phone);}catch(e){toast(e.message);}}
 
 /* ===== NOTICES ===== */
 RENDER.notifs=async function(){
@@ -683,13 +692,12 @@ RENDER.notifs=async function(){
   const canSend=['zoneLeader','director','admin'].includes(ACTOR.role);
   const canDelete=['zoneLeader','director','admin'].includes(ACTOR.role);
   paint('notifs',`${canSend?`<button class="btn" onclick="go('compose')">✎ Send a notice</button>`:`<p class="note-hint">Church accounts receive notices; zone leaders &amp; directors send.</p>`}
-    ${feed.length?'':`<p class="note-hint">No ${CAMP_MODE==='pre-camp'?'pre-camp':'camp'} notices yet. Leaders &amp; directors can post camp, zone or church updates here.</p>`}${feed.map(n=>{const sched=n.scheduledFor&&new Date(n.scheduledFor).getTime()>Date.now();return `<div class="ncard ${n.priority==='urgent'?'urgent':n.scope==='zone'?'zone':''}"${sched?' style="opacity:.8"':''}>
-      <div class="ntop"><span class="ntag">${n.scope==='camp'?'◆ Camp-wide':esc(n.zone)+' Zone'}</span>
+    ${feed.length?'':`<p class="note-hint">No ${CAMP_MODE==='pre-camp'?'pre-camp':'camp'} notices yet. Leaders &amp; directors can post camp, zone or church updates here.</p>`}${feed.map(n=>`<div class="ncard ${n.priority==='urgent'?'urgent':n.scope==='zone'?'zone':''}">
+      <div class="ntop"><span class="ntag">${n.scope==='camp'?'◆ Camp-wide':n.scope==='church'?'Church':esc(n.zone||'')+' Zone'}</span>
       ${n.priority==='urgent'?'<span class="ntag" style="background:#fdecec;color:#b91c1c">Urgent</span>':''}
-      ${sched?`<span class="ntag" style="background:#eef2ff;color:#3730a3">Scheduled · ${timeFmt(n.scheduledFor)}</span>`:''}
-      <span class="ntime">${sched?'':timeFmt(n.createdAt)}</span></div>
+      <span class="ntime">${timeFmt(n.createdAt)}</span></div>
       <div class="ntitle">${esc(n.title)}</div><div class="nbody">${esc(n.body)}</div>
-      <div class="rowsb" style="align-items:center;margin-top:6px"><div class="nfrom" style="margin:0">— ${esc(n.senderName)}</div>${canDelete?`<button class="btn ghost sm" onclick="deleteNotice('${n.id}')">Delete</button>`:''}</div></div>`;}).join('')}`,'Notices',CAMP_MODE==='pre-camp'?'Pre-camp updates':'Camp &amp; zone updates');
+      <div class="rowsb" style="align-items:center;margin-top:6px"><div class="nfrom" style="margin:0">— ${esc(n.senderName)}</div>${canDelete?`<button class="btn ghost sm" onclick="deleteNotice('${n.id}')">Delete</button>`:''}</div></div>`).join('')}`,'Notices',CAMP_MODE==='pre-camp'?'Pre-camp updates':'Camp &amp; zone updates');
 };
 async function deleteNotice(id){if(!confirm('Delete this notice for everyone?'))return;try{await api('/notifications/'+id,{method:'DELETE'});toast('Notice deleted');RENDER.notifs();}catch(e){toast(e.message);}}
 
@@ -796,30 +804,20 @@ RENDER.compose=function(){
     </div>
     ${isDir?`<div id="zoneWrap" style="display:none"><label>Zone</label><select id="zoneSel">${ZONES.map(z=>`<option>${z}</option>`).join('')}</select></div>`:''}
     <label>Priority</label><div class="seg" id="priSeg"><button class="on" data-pri="normal" onclick="setPri(this)">◈ Normal</button><button data-pri="urgent" onclick="setPri(this)">⚠︎ Urgent</button></div>
-    <label>When</label><div class="seg" id="whenSeg"><button class="on" data-when="now" onclick="setWhen(this)">Send now</button><button data-when="later" onclick="setWhen(this)">Schedule</button></div>
-    <div id="schedWrap" style="display:none"><label>Send at</label><input class="fld" id="schedAt" type="datetime-local"><div class="sub" style="font-size:.74rem;margin-top:4px">The notice stays hidden until this time, then appears for everyone in scope.</div></div>
     <label>Title</label><input class="fld" id="ntitle">
     <label>Message</label><textarea id="nbody"></textarea>
     <button class="btn" id="sendBtn" onclick="sendNotif()">Send notice</button>`,'Send a notice','Goes to leaders');
-  window._aud=isDir?'camp':'myzone';window._pri='normal';window._when='now';
+  window._aud=isDir?'camp':'myzone';window._pri='normal';
 };
 function setAud(b){document.querySelectorAll('#audSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');window._aud=b.dataset.aud;const z=document.getElementById('zoneWrap');if(z)z.style.display=window._aud==='zone'?'block':'none';}
 function setPri(b){document.querySelectorAll('#priSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');window._pri=b.dataset.pri;}
-function setWhen(b){document.querySelectorAll('#whenSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');window._when=b.dataset.when;
-  const w=document.getElementById('schedWrap');if(w)w.style.display=window._when==='later'?'block':'none';
-  const btn=document.getElementById('sendBtn');if(btn)btn.textContent=window._when==='later'?'Schedule notice':'Send notice';}
 async function sendNotif(){const title=document.getElementById('ntitle').value.trim(),body=document.getElementById('nbody').value.trim();
   if(!title||!body){toast('Enter title + message');return;}
   let p={priority:window._pri,title,body};
   if(window._aud==='camp')p.scope='camp';else if(window._aud==='myzone'){p.scope='zone';p.zone=ACTOR.zone;}
   else{p.scope='zone';p.zone=document.getElementById('zoneSel').value;}
-  let scheduled=false;
-  if(window._when==='later'){const v=document.getElementById('schedAt').value;
-    if(!v){toast('Pick a date & time to schedule');return;}
-    const when=new Date(v);if(isNaN(when.getTime())||when.getTime()<=Date.now()){toast('Choose a future time');return;}
-    p.scheduledFor=when.toISOString();scheduled=true;}
-  if(!scheduled&&(p.scope==='camp'||window._pri==='urgent')){if(!confirm('Send '+(window._pri==='urgent'?'URGENT ':'')+(p.scope==='camp'?'camp-wide':p.zone+' zone')+' notice?'))return;}
-  try{await api('/notifications',{method:'POST',body:p});toast(scheduled?'Scheduled ✓':'Delivered ✓');back();}catch(e){toast(e.message);}}
+  if(p.scope==='camp'||window._pri==='urgent'){if(!confirm('Send '+(window._pri==='urgent'?'URGENT ':'')+(p.scope==='camp'?'camp-wide':p.zone+' zone')+' notice?'))return;}
+  try{await api('/notifications',{method:'POST',body:p});toast('Delivered ✓');back();}catch(e){toast(e.message);}}
 
 /* ===== MY YOUTH at-camp ===== */
 
@@ -827,7 +825,7 @@ async function sendNotif(){const title=document.getElementById('ntitle').value.t
 RENDER.firstday=async function(){
   paint('firstday','<p class="note-hint" style="margin-top:40px;text-align:center">Loading…</p>','First Day Sign In','Select students to confirm');
   const page=await api('/campers?pageSize=300');
-  window._fdAll=page.items.filter(c=>c.kind==='student');
+  window._fdAll=(Array.isArray(page)?page:page.items||[]).filter(c=>c.kind==='student');
   window._fdPending=new Set();
   window._fdGender='all';window._fdGrade='all';
   fdDraw();
@@ -887,7 +885,7 @@ async function fdConfirmAll(){
   if(btn){btn.textContent='Signing in…';btn.disabled=true;}
   let ok=0,fail=0;
   await Promise.all(pending.map(id=>
-    api('/campers/'+id+'/sign-in',{method:'POST',body:{leaderName:ACTOR.displayName,firstDay:true}})
+    api('/attendance/sign-in',{method:'POST',body:{camperId:id,leaderName:ACTOR.displayName}})
       .then(()=>{
         const c=window._fdAll.find(s=>s.id===id);
         if(c)c.atCamp=true;
@@ -904,10 +902,11 @@ async function fdConfirmAll(){
 RENDER.myyouth=async function(){
   paint('myyouth','<p class="note-hint" style="margin-top:40px;text-align:center">Loading…</p>','My Youth Details','At camp · signed out · late');
   const page=await api('/campers?pageSize=300');
+  const items=Array.isArray(page)?page:page.items||[];
   const isWide=['zoneLeader','director','admin'].includes(ACTOR.role);
-  const zones=[...new Set(page.items.map(c=>c.zone))].sort();
+  const zones=[...new Set(items.map(c=>c.zone))].sort();
   const zoneFilterHtml=isWide?`<select id="myZoneF" onchange="filterMyYouth()"><option value="all">All zones</option>${zones.map(z=>`<option value="${z}">${z} Zone</option>`).join('')}</select>`:'';
-  window._myYouthAll=page.items;
+  window._myYouthAll=items;
   const base=`<div class="filters">${zoneFilterHtml}<select id="myGenderF" onchange="filterMyYouth()"><option value="all">All genders</option><option value="female">Girls</option><option value="male">Guys</option></select><select id="myGradeF" onchange="filterMyYouth()"><option value="all">All grades</option>${GRADES.map(g=>`<option value="${g}">Yr ${g}</option>`).join('')}</select></div><div id="myYouthList"></div>`;
   paint('myyouth',base,'My Youth Details','At camp · signed out · late');
   filterMyYouth();
@@ -946,14 +945,15 @@ function filterMyYouth(){
 }
 async function openCamper(id,push=true){
   const p=await api('/campers/'+id);let notesHtml='';const lead=p.kind==='leader';
-  if(canReadNotes()){try{const notes=await api('/campers/'+id+'/notes');
-    notesHtml=`<div class="h3">Notes (zone/director only)</div>${notes.length?notes.map(n=>`<div class="noteitem">${esc(n.body)}<div class="meta">${esc(n.authorName)} · ${dtFmt(n.createdAt)}</div></div>`).join(''):'<p class="sub">No notes.</p>'}`;
+  const lastSignOut=(p.signOutHistory||[]).filter(e=>e.type==='out').slice(-1)[0]||null;
+  if(canReadNotes()){try{const notes=await api('/notes/camper/'+id);
+    notesHtml=`<div class="h3">Notes (zone/director only)</div>${notes.length?notes.map(n=>`<div class="noteitem">${esc(n.body)}<div class="meta">${n.category&&n.category!=='note'?esc(n.category)+' · ':''}${esc(n.authorName)} · ${dtFmt(n.createdAt)}</div></div>`).join(''):'<p class="sub">No notes.</p>'}`;
   }catch(e){}}
   const camp=`<div class="card"><div class="h3" style="margin-top:0">Camp attendance</div>
     <div class="kv"><span class="k">Status</span><span class="v">${p.atCamp?'<span class="pill ok">Signed in</span>':'<span class="pill warn">Signed out</span>'}</span></div>
-    ${!p.atCamp&&p.lastSignOut?`<div class="kv"><span class="k">Signed out by</span><span class="v">${esc(p.lastSignOut.leaderName)}</span></div>
-    <div class="kv"><span class="k">Reason</span><span class="v">${esc(p.lastSignOut.reason||'—')}</span></div>
-    <div class="kv"><span class="k">Parents met</span><span class="v">${p.lastSignOut.parentsMet?'Yes':'No'}</span></div>`:''}
+    ${!p.atCamp&&lastSignOut?`<div class="kv"><span class="k">Signed out by</span><span class="v">${esc(lastSignOut.leaderName)}</span></div>
+    <div class="kv"><span class="k">Reason</span><span class="v">${esc(lastSignOut.reason||'—')}</span></div>
+    <div class="kv"><span class="k">Parents met</span><span class="v">${lastSignOut.parentsMet?'Yes':'No'}</span></div>`:''}
     ${p.atCamp?`<button class="btn red" onclick="signOutPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">Sign out of camp</button>`:`<button class="btn" onclick="signInPrompt('${id}','${esc(p.fullName||p.firstName+' '+p.lastName)}')">${(p.signOutHistory||[]).some(e=>e.type==='out')?'Sign back in to camp':'Sign in to camp (late arrival)'}</button>`}</div>`;
   const fullName=p.fullName||p.firstName+' '+p.lastName;
   document.getElementById('camper').innerHTML=`<div class="detail-hd"><div class="av-lg">${initials(fullName)}</div>
@@ -1002,7 +1002,7 @@ function signOutReview(id,name){
     <button class="btn ghost" style="margin-top:6px" onclick="signOutPrompt('${id}','${esc(name)}')">‹ Edit</button>`);
 }
 async function signOutConfirm(){const d=window._soDraft;if(!d)return;
-  try{await api('/campers/'+d.id+'/sign-out',{method:'POST',body:{leaderName:d.leader,reason:d.reason,parentsMet:d.pm}});window._soDraft=null;closeModal();toast('Signed out ✓');openCamper(d.id,false);}catch(e){toast(e.message);}}
+  try{await api('/attendance/sign-out',{method:'POST',body:{camperId:d.id,leaderName:d.leader,reason:d.reason,parentsMet:d.pm}});window._soDraft=null;closeModal();toast('Signed out ✓');openCamper(d.id,false);}catch(e){toast(e.message);}}
 function signInPrompt(id,name){
   modal(`<h3>Sign in · ${esc(name)}</h3><p class="sub" style="margin:4px 0 8px">Signing this youth back IN to camp.</p>
     <label>Your initials</label><input class="fld" id="siInit" placeholder="e.g. SD" maxlength="6">
@@ -1010,7 +1010,7 @@ function signInPrompt(id,name){
     <button class="btn ghost" style="margin-top:6px" onclick="closeModal()">Cancel</button>`);
 }
 async function signInConfirm(id){const init=document.getElementById('siInit').value.trim();if(!init){toast('Enter your initials');return;}
-  try{await api('/campers/'+id+'/sign-in',{method:'POST',body:{leaderName:init}});closeModal();toast('Signed in ✓');openCamper(id,false);}catch(e){toast(e.message);}}
+  try{await api('/attendance/sign-in',{method:'POST',body:{camperId:id,leaderName:init}});closeModal();toast('Signed in ✓');openCamper(id,false);}catch(e){toast(e.message);}}
 
 /* ===== SCHEDULE ===== */
 let SCHED_DAY=null;
@@ -1032,7 +1032,7 @@ let DEVO_DAY=null;
 RENDER.devotional=async function(){
   if(!DEVO_DAY)DEVO_DAY=(SETTINGS?.checkInDays&&SETTINGS.checkInDays[0])||null;
   if(!DEVO_DAY){paint('devotional','<p class="note-hint">No camp days configured.</p>','Daily Devotional','');return;}
-  const d=await api('/devotional?day='+DEVO_DAY).catch(()=>null);
+  const d=await api('/devotional/'+DEVO_DAY).catch(()=>null);
   const days=SETTINGS?.checkInDays||[];
   const daySeg=days.length>1?`<div class="seg">${days.map(dy=>`<button class="${dy===DEVO_DAY?'on':''}" onclick="selDevoDay('${dy}')">${new Date(dy+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',timeZone:'UTC'})}</button>`).join('')}</div>`:'';
   paint('devotional',daySeg+(d?`<div class="hero" style="background:radial-gradient(130% 130% at 100% 0%,#0ea5a4,#12233b 78%)">
@@ -1052,18 +1052,29 @@ RENDER.faq=async function(){
 
 /* ===== NOTES ===== */
 RENDER.testimonies=async function(){
-  paint('testimonies',`<div class="infobox" style="font-size:.82rem">Share a testimony or God-moment from camp. It is saved with the other records that leaders &amp; directors review.</div>
-    <div class="card"><label>Your name (leader)</label><input class="fld" id="tmLeader" value="${esc(LAST_LEADER||'')}" placeholder="e.g. Sarah Doyle">
+  // A testimony is stored as a note with category 'testimony' — the backend requires a camper,
+  // so the leader selects which student the testimony is about.
+  const page=await api('/campers?pageSize=300').catch(()=>[]);
+  const items=(Array.isArray(page)?page:page.items||[]).filter(c=>c.kind==='student').sort((a,b)=>(a.firstName+a.lastName).localeCompare(b.firstName+b.lastName));
+  const opts=items.map(c=>`<option value="${c.id}">${esc(c.firstName+' '+c.lastName)} · ${esc(c.churchName)}</option>`).join('');
+  paint('testimonies',`<div class="infobox" style="font-size:.82rem">Record a testimony or God-moment from camp for a student. It is saved with the records that leaders &amp; directors review.</div>
+    <div class="card"><label>Student</label><select id="tmCamper">${opts||'<option value="">No students available</option>'}</select>
+    <label>Your name (leader)</label><input class="fld" id="tmLeader" value="${esc(LAST_LEADER||'')}" placeholder="e.g. Sarah Doyle">
     <label>Testimony</label><textarea id="tmBody" placeholder="What happened? Whose story is it? What did God do?" style="min-height:120px"></textarea>
-    <button class="btn" onclick="submitTestimony()">Submit testimony</button></div>`,'Submit Testimonies','Day 2–4');
+    <button class="btn" onclick="submitTestimony()">Submit testimony</button></div>`,'Submit Testimonies','Day 2+');
 };
-async function submitTestimony(){const leader=val('tmLeader'),body=val('tmBody');if(!leader){toast('Add your name');return;}if(!body){toast('Write the testimony');return;}LAST_LEADER=leader;
-  try{await api('/notes',{method:'POST',body:{cat:'testimony',body,authorName:leader}});toast('Testimony submitted ✓');const t=document.getElementById('tmBody');if(t)t.value='';}catch(e){toast(e.message);}}
+async function submitTestimony(){const camperId=sel('tmCamper'),leader=val('tmLeader'),body=val('tmBody');
+  if(!camperId){toast('Pick a student');return;}if(!body){toast('Write the testimony');return;}LAST_LEADER=leader;
+  const full=leader&&leader!==ACTOR.displayName?`${body}\n— logged by ${leader}`:body;
+  try{await api('/notes',{method:'POST',body:{camperId,body:full,category:'testimony'}});toast('Testimony submitted ✓');const t=document.getElementById('tmBody');if(t)t.value='';}catch(e){toast(e.message);}}
 RENDER.notes=async function(){
-  window._notesAll=await api('/notes')||[];
+  // /notes/recent returns bare notes (no camper details) — join /campers for name/church/zone/gender/grade.
+  const [notes,page]=await Promise.all([api('/notes/recent'),api('/campers?pageSize=300').catch(()=>[])]);
+  const camps=Array.isArray(page)?page:page.items||[];const cmap={};camps.forEach(c=>{cmap[c.id]=c;});
+  window._notesAll=(notes||[]).map(n=>{const c=cmap[n.camperId]||{};return Object.assign({},n,{camperName:c.firstName?(c.firstName+' '+c.lastName):n.camperId,church:c.churchName,zone:c.zone,gender:c.gender,grade:c.grade,cat:n.category||'note'});});
   const churches=[...new Set(window._notesAll.map(n=>n.church).filter(Boolean))].sort();
   const zonesPresent=[...new Set(window._notesAll.map(n=>n.zone).filter(Boolean))].sort();
-  const recSel=`<div><label>Record</label><select id="ntCat" onchange="drawNotes()"><option value="all">All records</option><option value="testimony">Testimony</option><option value="record">Sign-out/in</option><option value="note">Student note</option></select></div>`;
+  const recSel=`<div><label>Record</label><select id="ntCat" onchange="drawNotes()"><option value="all">All records</option><option value="testimony">Testimony</option><option value="note">Student note</option></select></div>`;
   const minSel=`<div><label>Ministry</label><select id="ntChurch" onchange="drawNotes()"><option value="all">All ministries</option>${churches.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>`;
   const zoneSel=`<div><label>Zone</label><select id="ntZone" onchange="drawNotes()"><option value="all">All zones</option>${zonesPresent.map(z=>`<option value="${z}">${z} Zone</option>`).join('')}</select></div>`;
   paint('notes',`<button class="btn alt" onclick="exportNotes()">↓ Export (CSV)</button>
@@ -1078,21 +1089,18 @@ function drawNotes(){
   if(ch!=='all')list=list.filter(n=>n.church===ch);
   if(z!=='all')list=list.filter(n=>n.zone===z);
   const box=document.getElementById('notesList');if(!box)return;
-  const badge=c=>c==='testimony'?'<span class="pill info">Testimony</span>':c==='record'?'<span class="pill amb">Sign-out/in</span>':'<span class="pill ok">Student note</span>';
+  const badge=c=>c==='testimony'?'<span class="pill info">Testimony</span>':'<span class="pill ok">Student note</span>';
   box.innerHTML=list.length?list.map(n=>{const c=n.cat||'note';const isT=c==='testimony';
-    const right=(!isT&&n.gender)?`<span class="sub" style="white-space:nowrap">${n.gender==='male'?'♂':'♀'} · Yr ${n.grade||'—'}</span>`:'';
-    return `<div class="card"><div class="rowsb" style="align-items:center"><div class="nm">${isT?'Testimony':esc(n.camperName||'—')}</div>${right}</div>
+    const right=(n.gender)?`<span class="sub" style="white-space:nowrap">${n.gender==='male'?'♂':'♀'}${n.grade?' · Yr '+n.grade:''}</span>`:'';
+    return `<div class="card"><div class="rowsb" style="align-items:center"><div class="nm">${esc(n.camperName||'—')}</div>${right}</div>
     <div style="font-size:.86rem;color:#475569;margin:4px 0">${esc(n.body)}</div>
     <div class="sub">${esc(n.authorName)} · ${dtFmt(n.createdAt)}${n.church?' · '+esc(n.church):''} · ${badge(c)}</div></div>`;}).join(''):'<p class="note-hint">No records match these filters.</p>';
 }
 async function exportNotes(){
-  try{const rows=await api('/notes/export');if(!rows.length){toast('Nothing to export');return;}
-    const headers=['Time','Category','Student','Logged by','Church','Gender','Grade','Note'];
-    const csvCell=v=>{const s=String(v??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
-    const csv=[headers.join(','),...rows.map(r=>[new Date(r.time).toLocaleString(),r.category,r.camperName,r.loggedBy,r.church,r.gender,r.grade,r.note].map(csvCell).join(','))].join('\r\n');
+  try{const csv=await api('/notes/export');if(!csv||typeof csv!=='string'){toast('Nothing to export');return;}
     const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');
     a.href=url;a.download='testimonies-and-notes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    toast('Exported '+rows.length+' records');
+    toast('Exported ✓');
   }catch(e){toast(e.message);}}
 
 /* ===== ADMIN CONSOLE ===== */
