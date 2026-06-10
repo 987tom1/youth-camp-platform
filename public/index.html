@@ -362,47 +362,54 @@ const RENDER={};
 RENDER.home=async function renderHome(){
   if(CAMP_MODE==='at-camp'){await renderHomeAtCamp();return;}
   const h=await api('/home');
-  const s=SETTINGS,isCamp=h.scope==='camp';
-  const pct=h.expected?Math.min(100,Math.round(h.registered/h.expected*100)):0;
-  const tent=h.accommodation?.tent||0,cls=h.accommodation?.classroom||0;
-  const al=accLabelOf(tent,cls);
-  let body=`<div class="hero"><div class="k">${esc(s.campName)}</div><h2>Hi ${esc(ACTOR.displayName)}</h2>
-    <div class="cd"><div class="big">${s.daysToGo??'—'}</div><div class="meta">days to go<br>${esc(s.startDate)} – ${esc(s.endDate)}</div></div></div>`;
+  const s=SETTINGS,isWide=['director','admin'].includes(ACTOR.role);
+  let body=`<div class="hero"><div class="k">${esc((s&&s.campName)||h.campName)}</div><h2>Hi ${esc(ACTOR.displayName)}</h2>
+    <div class="cd"><div class="big">${h.daysToGo??'—'}</div><div class="meta">days to go<br>${esc(h.startDate||'')}${s&&s.endDate?' – '+esc(s.endDate):''}</div></div></div>`;
   body+=`<div class="statband">
-    <div class="s"><b>${h.campers||0}</b><span>Campers</span></div>
-    <div class="s"><b>${h.leaders||0}</b><span>Leaders</span></div>
-    <div class="s"><b style="color:${h.leaderWwcOutstanding?'#b91c1c':'#15803d'}">${h.leaderWwcOutstanding||0}</b><span>Ldr blue card</span></div>
+    <div class="s"><b>${h.totalCampers||0}</b><span>Campers</span></div>
+    <div class="s"><b>${h.totalLeaders||0}</b><span>Leaders</span></div>
+    <div class="s"><b style="color:${h.noBlueCardCount?'#b91c1c':'#15803d'}">${h.noBlueCardCount||0}</b><span>Ldr blue card</span></div>
   </div>`;
-  if(['director','admin'].includes(ACTOR.role))body+=`<div class="card tap" onclick="go('budget')"><div class="rowsb"><div><div style="font-weight:600">Budget &amp; costings</div><div class="sub">Fees, vouchers &amp; sponsorship by ministry</div></div><span class="pill info">View ›</span></div></div>`;
-  if(['director','admin'].includes(ACTOR.role))body+=`<div class="card tap" onclick="go('accom')"><div class="rowsb"><div><div style="font-weight:600">Accommodation allocations</div><div class="sub">Assign classrooms by ministry &amp; gender</div></div><span class="pill info">View ›</span></div></div>`;
-  body+=`<div class="card"><div class="rowsb"><div class="lbl" style="margin:0">${isCamp?'Camp registrations':'Your registrations'}</div><b>${h.registered||0}/${h.expected||'—'}</b></div>
-    <div class="bar7"><i style="width:${pct}%"></i></div>
-    <div class="rowsb"><span class="sub" style="font-size:.74rem">${h.campers||0} campers · ${h.leaders||0} leaders</span>${al.text?`<span class="accbadge ${al.primary}">${al.text}</span>`:''}</div></div>`;
-  if(h.churches?.length){
-    body+=`<h3 class="sec">By ministry</h3>`;
-    const gcols='grid-template-columns:1fr 58px 20px 58px 20px 34px';
-    const hdr=`<div style="display:grid;${gcols};align-items:end;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line)"><span></span><span style="text-align:center">Student</span><span></span><span style="text-align:center">Leader</span><span></span><span style="text-align:center">Total</span></div>`;
-    const rows=h.churches.map(c=>`<div style="display:grid;${gcols};align-items:center;padding:7px 0;border-top:1px solid var(--line)">
-      <span style="font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span>
-      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleStudents}</b><b style="color:#db2777;margin-left:9px">${c.femaleStudents}</b></span><span></span>
-      <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleLeaders}</b><b style="color:#db2777;margin-left:9px">${c.femaleLeaders}</b></span><span></span>
-      <span style="text-align:center;font-weight:800;color:var(--ink)">${c.total}</span>
-    </div>`).join('');
-    body+=`<div class="card" style="padding:8px 12px">${hdr}${rows}</div>`;
+  if(isWide)body+=`<div class="card tap" onclick="go('budget')"><div class="rowsb"><div><div style="font-weight:600">Budget &amp; costings</div><div class="sub">Camper fees by accommodation</div></div><span class="pill info">View ›</span></div></div>`;
+  if(isWide)body+=`<div class="card tap" onclick="go('accom')"><div class="rowsb"><div><div style="font-weight:600">Accommodation allocations</div><div class="sub">Assign classrooms by ministry &amp; gender</div></div><span class="pill info">View ›</span></div></div>`;
+  body+=`<div class="card"><div class="rowsb"><div class="lbl" style="margin:0">${isWide?'Camp registrations':'Your registrations'}</div><b>${h.totalRegistrants||0}</b></div>
+    <div class="rowsb" style="margin-top:6px"><span class="sub" style="font-size:.74rem">${h.totalCampers||0} campers · ${h.totalLeaders||0} leaders</span>${h.unpaidCount?`<span class="pill amb">${h.unpaidCount} unpaid</span>`:'<span class="pill ok">All paid</span>'}</div></div>`;
+  if(isWide){
+    // By-ministry M/F split — aggregate from /registrants (the /home + /breakdown DTOs carry no gender split)
+    const regs=await api('/registrants').catch(()=>[]);
+    const by={};(regs||[]).forEach(r=>{const c=by[r.churchId]||(by[r.churchId]={name:r.churchName,maleStudents:0,femaleStudents:0,maleLeaders:0,femaleLeaders:0,total:0});c.total++;
+      const ld=r.kind==='leader';if(r.gender==='male'){ld?c.maleLeaders++:c.maleStudents++;}else{ld?c.femaleLeaders++:c.femaleStudents++;}});
+    const churches=Object.values(by);
+    if(churches.length){
+      body+=`<h3 class="sec">By ministry</h3>`;
+      const gcols='grid-template-columns:1fr 58px 20px 58px 20px 34px';
+      const hdr=`<div style="display:grid;${gcols};align-items:end;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line)"><span></span><span style="text-align:center">Student</span><span></span><span style="text-align:center">Leader</span><span></span><span style="text-align:center">Total</span></div>`;
+      const rows=churches.map(c=>`<div style="display:grid;${gcols};align-items:center;padding:7px 0;border-top:1px solid var(--line)">
+        <span style="font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span>
+        <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleStudents}</b><b style="color:#db2777;margin-left:9px">${c.femaleStudents}</b></span><span></span>
+        <span style="text-align:center;white-space:nowrap"><b style="color:#2563eb">${c.maleLeaders}</b><b style="color:#db2777;margin-left:9px">${c.femaleLeaders}</b></span><span></span>
+        <span style="text-align:center;font-weight:800;color:var(--ink)">${c.total}</span>
+      </div>`).join('');
+      body+=`<div class="card" style="padding:8px 12px">${hdr}${rows}</div>`;
+    }
   }else{
+    const regs=await api('/registrants').catch(()=>[]);
+    const mine=(regs||[]).filter(r=>r.kind==='camper');
+    const tent=mine.filter(r=>r.accommodationKind==='tent').length,cls=mine.filter(r=>r.accommodationKind==='classroom').length;
     body+=`<h3 class="sec">Accommodation registrations</h3>`;
     body+=`<div class="card"><div class="rowsb"><b>△ Tent</b><span class="pill info">${tent} registered</span></div>
       <div class="rowsb" style="margin-top:8px"><b>⌂ Classroom</b><span class="pill info">${cls} registered</span></div>
       <div class="sub" style="font-size:.74rem;margin-top:8px">Your group's tent vs classroom split. Specific locations are assigned by the camp office.</div></div>`;
-    if(ACTOR.role==='church')body+=`<div class="card tap" onclick="go('codes')"><div class="rowsb"><div><div style="font-weight:600"># Registration code</div><div class="sub">Share with your families</div></div><span class="pill info">${esc(h.code||'—')} ›</span></div></div>`;
+    if(ACTOR.role==='church'){let code='—';try{const chs=await api('/accounts/churches');const mc=(chs||[]).find(c=>c.id===ACTOR.churchId);if(mc)code=mc.code||'—';}catch(e){}
+      body+=`<div class="card tap" onclick="go('codes')"><div class="rowsb"><div><div style="font-weight:600"># Registration code</div><div class="sub">Share with your families</div></div><span class="pill info">${esc(code)} ›</span></div></div>`;}
   }
-  // Notices (pre-camp; these do not expire)
+  // Notices — latest 3 (backend has no scheduled-for-later; expiry handled server-side)
   try{const feed=await api('/notifications');
-    const notices=(feed||[]).filter(n=>(!n.scheduledFor||new Date(n.scheduledFor).getTime()<=Date.now())).slice(0,3);
+    const notices=(feed||[]).slice(0,3);
     body+=`<div class="rowsb" style="margin-top:18px"><h3 class="sec" style="margin:0">Notices</h3><span class="sub" style="font-size:.72rem">Latest 3 · tap to open</span></div>
     <div id="homeNotices" style="margin-top:10px">${notices.length?notices.map(noticeCard).join(''):'<p class="note-hint">All caught up — no notices right now.</p>'}</div>`;
   }catch(e){}
-  paint('home',body,'My Church Hub',isCamp?'All churches':esc(h.title||ACTOR.displayName));
+  paint('home',body,'My Church Hub',isWide?'All churches':(ACTOR.churchName?esc(ACTOR.churchName):esc(ACTOR.displayName)));
 };
 
 function accLabelOf(tent,cls){const p=tent&&cls?'mixed':tent?'tent':cls?'classroom':'none';
@@ -414,13 +421,9 @@ async function renderHomeAtCamp(){
   const DUE=d.checkInsDue||0;
   const tb=document.getElementById('tabDue');if(tb){if(DUE>0){tb.style.display='grid';tb.textContent=DUE;}else tb.style.display='none';}
   let myAccom='';
-  if(ACTOR.role==='church'){try{const [mr,rooms,alloc]=await Promise.all([api('/registrants'),api('/classrooms'),api('/allocations')]);
-    const mine=mr.filter(r=>r.kind==='camper');const tentN=mine.filter(r=>r.accommodationKind==='tent').length;const clsN=mine.filter(r=>r.accommodationKind==='classroom').length;
-    const parts=[];if(tentN>0)parts.push('Tents');
-    const myKeys=[ACTOR.churchId+'|male',ACTOR.churchId+'|female'];const roomNames=[];
-    Object.entries(alloc||{}).forEach(([rid,entries])=>{(entries||[]).forEach(e=>{if(myKeys.includes(e.key)){const rm=(rooms||[]).find(r=>r.id===rid);if(rm&&!roomNames.includes(rm.name))roomNames.push(rm.name);}});});
-    roomNames.forEach(n=>parts.push(n));if(clsN>0&&!roomNames.length)parts.push('Classroom (TBC)');
-    myAccom=parts.join(' · ')||'To be confirmed';
+  if(ACTOR.role==='church'&&ACTOR.churchId){try{const held=await api('/accommodation/held/'+ACTOR.churchId);
+    const parts=[...new Set((held||[]).map(x=>x.label||x.blockName||x.name||x.kind).filter(Boolean))];
+    myAccom=parts.length?parts.join(' · '):'To be confirmed';
   }catch(e){myAccom='To be confirmed';}}
   // Tiles: only screens NOT already on the quick bar (Daily Check-in, Search, Notices, Admin live there).
   const tiles=[];
@@ -447,7 +450,7 @@ async function renderHomeAtCamp(){
 }
 function noticeCard(n){
   const urg=n.priority==='urgent';
-  const scope=n.scope==='camp'?'Camp-wide':esc(n.zone||'')+' Zone';
+  const scope=n.scope==='camp'?'Camp-wide':n.scope==='church'?'Your church':esc(n.zone||'')+' Zone';
   return `<div class="notice ${urg?'urg':''}" data-nid="${esc(n.id)}" onclick="gotoTab('notifs')">
     <span class="nico" style="color:${urg?'var(--danger)':'var(--info)'}">${ic(urg?'alert':'bell')}</span>
     <div style="flex:1;min-width:0">
@@ -560,9 +563,10 @@ async function markReg(id,patch){try{await api('/registrants/'+id,{method:'PATCH
 
 /* CODES */
 RENDER.codes=async function(){
-  const s=SETTINGS,h=await api('/home');
+  const s=SETTINGS;let code='—';
+  try{const chs=await api('/accounts/churches');const mc=(chs||[]).find(c=>c.id===ACTOR.churchId);if(mc)code=mc.code||'—';}catch(e){}
   paint('codes',`<div class="card" style="text-align:center"><div class="lbl">Your church code</div>
-    <div style="font-size:2rem;font-weight:800;letter-spacing:.1em;color:var(--navy)">${esc(h.code||'—')}</div>
+    <div style="font-size:2rem;font-weight:800;letter-spacing:.1em;color:var(--navy)">${esc(code)}</div>
     <p class="note-hint" style="margin-top:6px">Families enter this at ${esc(s?.registerBaseUrl||'')}.</p></div>
     <div class="card"><div class="lbl">Family self-register link</div>
     <div style="background:#f1f5fb;border-radius:10px;padding:10px;font-size:.82rem;color:#2851a3;word-break:break-all">${esc(s?.registerBaseUrl||'')+'/r/'+esc((ACTOR.displayName||'church').toLowerCase().replace(/[^a-z0-9]+/g,'-'))}</div>
@@ -689,35 +693,36 @@ RENDER.notifs=async function(){
 };
 async function deleteNotice(id){if(!confirm('Delete this notice for everyone?'))return;try{await api('/notifications/'+id,{method:'DELETE'});toast('Notice deleted');RENDER.notifs();}catch(e){toast(e.message);}}
 
-/* ===== BUDGET (director only) ===== */
+/* ===== BUDGET (director/admin) =====
+   Prices come from accommodation blocks (settings has no price fields); the backend has
+   no fee-tier, so every camper is charged the full price for their accommodation kind. */
 RENDER.budget=async function(){
   if(!['director','admin'].includes(ACTOR.role)){paint('budget','<p class="note-hint" style="margin-top:24px;text-align:center">Budget is available to directors only.</p>','Budget & costings','');return;}
-  const regs=await api('/registrants');
-  const price={tent:Number(SETTINGS&&SETTINGS.tentPrice)||140,classroom:Number(SETTINGS&&SETTINGS.classroomPrice)||120};
-  window._budgetRegs=regs;window._budgetPrice=price;
-  const churches=[...new Map(regs.map(r=>[r.churchId,r.churchName])).entries()].map(([id,name])=>({id,name}));
-  const selHtml=`<div class="filters"><select id="budChurch" onchange="drawBudget()"><option value="all">All ministries</option>${churches.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>`;
-  paint('budget',`${selHtml}<div id="budgetBody"></div>`,'Budget & costings','Fees, vouchers & sponsorship');
+  const [regs,blocks]=await Promise.all([api('/registrants'),api('/accommodation/blocks')]);
+  const priceOf=k=>{const b=(blocks||[]).find(x=>x.kind===k);return b?Number(b.price)||0:0;};
+  window._budgetPrice={tent:priceOf('tent')||140,classroom:priceOf('classroom')||120};
+  window._budgetRegs=regs||[];
+  const churches=[...new Map((regs||[]).map(r=>[r.churchId,r.churchName])).entries()].map(([id,name])=>({id,name}));
+  const selHtml=`<div class="filters"><select id="budChurch" onchange="drawBudget()"><option value="all">All ministries</option>${churches.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div>`;
+  paint('budget',`${selHtml}<div id="budgetBody"></div>`,'Budget & costings','Camper fees by accommodation');
   drawBudget();
 };
-function budgetAmount(r,price){const base=price[r.accommodationKind]||price.tent||0;if(r.feeTier==='sponsored')return 0;if(r.feeTier==='half')return Math.round(base/2);return base;}
+function budgetAmount(r,price){return price[r.accommodationKind]||0;}
 function drawBudget(){
   const regs=window._budgetRegs||[],price=window._budgetPrice||{tent:140,classroom:120};
   const scope=sel('budChurch')||'all';
-  const list=scope==='all'?regs:regs.filter(r=>r.churchId===scope);
-  const tiers=[{key:'tent',label:'Tent price'},{key:'classroom',label:'Classroom price'},{key:'half',label:'Half-price voucher'},{key:'sponsored',label:'Fully sponsored'}];
+  const campers=(scope==='all'?regs:regs.filter(r=>r.churchId===scope)).filter(r=>r.kind==='camper');
+  const cats=[{key:'tent',label:'△ Tent'},{key:'classroom',label:'⌂ Classroom'}];
   let total=0;
-  const rows=tiers.map(t=>{const grp=list.filter(r=>(r.feeTier||'tent')===t.key);const amt=grp.reduce((s,r)=>s+budgetAmount(r,price),0);total+=amt;
-    const note=t.key==='half'?'50% fee':t.key==='sponsored'?'$0':'$'+(price[t.key]||0)+' ea';
-    return `<div class="card"><div class="rowsb"><div><div style="font-weight:600">${t.label}</div><div class="sub">${grp.length} ${grp.length===1?'person':'people'} · ${note}</div></div><b style="font-size:1.05rem">$${amt.toLocaleString()}</b></div></div>`;
+  const rows=cats.map(t=>{const grp=campers.filter(r=>r.accommodationKind===t.key);const amt=grp.reduce((s,r)=>s+budgetAmount(r,price),0);total+=amt;
+    return `<div class="card"><div class="rowsb"><div><div style="font-weight:600">${t.label}</div><div class="sub">${grp.length} ${grp.length===1?'camper':'campers'} · $${price[t.key]||0} ea</div></div><b style="font-size:1.05rem">$${amt.toLocaleString()}</b></div></div>`;
   }).join('');
-  const potential=list.reduce((s,r)=>s+(price[r.accommodationKind]||price.tent||0),0);
-  const subsidy=potential-total;
+  const unset=campers.filter(r=>r.accommodationKind!=='tent'&&r.accommodationKind!=='classroom').length;
   const head=`<div class="card" style="background:linear-gradient(135deg,#2f6bf6,#12233b);color:#fff;border:none">
-    <div class="lbl" style="color:#9cc0ff;margin:0">Fees collected${scope==='all'?' · all ministries':''}</div>
+    <div class="lbl" style="color:#9cc0ff;margin:0">Fees${scope==='all'?' · all ministries':''}</div>
     <div style="font-size:2rem;font-weight:800">$${total.toLocaleString()}</div>
-    <div style="font-size:.8rem;color:#cfe0ff">${list.length} registrations · $${subsidy.toLocaleString()} in vouchers &amp; sponsorship</div></div>`;
-  const box=document.getElementById('budgetBody');if(box)box.innerHTML=head+`<h3 class="sec">By fee category</h3>`+rows;
+    <div style="font-size:.8rem;color:#cfe0ff">${campers.length} campers${unset?' · '+unset+' without accommodation set':''}</div></div>`;
+  const box=document.getElementById('budgetBody');if(box)box.innerHTML=head+`<h3 class="sec">By accommodation</h3>`+rows;
 }
 
 /* ===== ACCOMMODATION ALLOCATIONS (director only) ===== */
