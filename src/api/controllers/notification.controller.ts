@@ -1,6 +1,6 @@
 import type { HttpRequest } from '../http/types';
 import type { NotificationService } from '../../services/notification.service';
-import { UnauthorizedError } from '../../core/errors/app-error';
+import { UnauthorizedError, BadRequestError } from '../../core/errors/app-error';
 
 export interface NotificationControllerServices {
   notification: NotificationService;
@@ -21,6 +21,13 @@ export function makeNotificationController(services: NotificationControllerServi
     async send(req: HttpRequest) {
       if (!req.ctx) throw new UnauthorizedError();
       return services.notification.send(req.ctx.actor, req.body);
+    },
+
+    async remove(req: HttpRequest) {
+      if (!req.ctx) throw new UnauthorizedError();
+      const id = req.params['id'];
+      if (!id) throw new BadRequestError('Missing notification id');
+      return services.notification.remove(req.ctx.actor, id);
     },
   };
 }

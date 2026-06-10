@@ -12,6 +12,7 @@ const AddNoteSchema = z.object({
   camperId: z.string().min(1),
   body: z.string().min(1).max(2000),
   sessionId: z.string().optional(),
+  category: z.string().max(40).optional(),
 });
 
 export interface NoteService {
@@ -41,6 +42,7 @@ export function makeNoteService(
         authorName: actor.displayName,
         authorChurchId: actor.churchId,
         sessionId: data.sessionId ?? null,
+        category: data.category ?? 'note',
         createdAt: nowISO(),
       };
       return noteRepo.save(note);
@@ -71,19 +73,21 @@ export function makeNoteService(
     async exportRows(actor) {
       assertCan(actor, 'note:read');
       const notes = await noteRepo.findAll();
-      const headers = ['id', 'camperId', 'author', 'session', 'body', 'createdAt'];
+      const headers = ['Time', 'Student', 'Logged by', 'Church', 'Gender', 'Grade', 'Category', 'Note'];
       const rows: string[][] = [];
       for (const note of notes) {
         const camper = await camperRepo.findById(note.camperId);
         if (!camper) continue;
         if (!canAccessCamper(actor, camper)) continue;
         rows.push([
-          note.id,
-          note.camperId,
-          note.authorName,
-          note.sessionId ?? '',
-          note.body,
           note.createdAt,
+          `${camper.firstName} ${camper.lastName}`,
+          note.authorName,
+          camper.churchName,
+          camper.gender,
+          camper.grade != null ? String(camper.grade) : '',
+          note.category ?? 'note',
+          note.body,
         ]);
       }
       return toCsvString(headers, rows);

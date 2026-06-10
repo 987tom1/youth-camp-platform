@@ -5,11 +5,13 @@ import { assertCanSendNotification } from './access-control';
 import { CreateNotificationSchema } from '../core/validation/notification.schema';
 import { newId } from '../utils/id';
 import { nowISO } from '../utils/date';
+import { ForbiddenError, NotFoundError } from '../core/errors/app-error';
 
 export interface NotificationService {
   send(actor: Actor, input: unknown): Promise<Notification>;
   feed(actor: Actor): Promise<Notification[]>;
   latest(actor: Actor): Promise<Notification | null>;
+  remove(actor: Actor, id: string): Promise<{ ok: true }>;
   clearAll(actor: Actor): Promise<{ deleted: number }>;
 }
 
@@ -80,6 +82,19 @@ export function makeNotificationService(
     async latest(actor) {
       const feed = await getActorFeed(actor);
       return feed[0] ?? null;
+    },
+
+    async remove(actor, id) {
+      if (actor.role !== 'zoneLeader' && actor.role !== 'director' && actor.role !== 'admin') {
+        throw new ForbiddenError('Not allowed to delete notifications');
+      }
+      const existing = await notifRepo.findById(id);
+      if (!existing) throw new NotFoundError('Notification not found');
+      if (actor.role === 'zoneLeader' && !(existing.scope === 'zone' && existing.zone === actor.zone)) {
+        throw new ForbiddenError('Zone leaders can only delete notices for their own zone');
+      }
+      await notifRepo.delete(id);
+      return { ok: true };
     },
 
     async clearAll(actor) {

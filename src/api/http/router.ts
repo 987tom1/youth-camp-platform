@@ -104,6 +104,7 @@ export function buildRoutes(services: Services): Route[] {
     { method: 'GET', path: '/notifications', auth: true, handler: (r) => notification.feed(r) },
     { method: 'GET', path: '/notifications/latest', auth: true, handler: (r) => notification.latest(r) },
     { method: 'POST', path: '/notifications', auth: true, handler: (r) => notification.send(r) },
+    { method: 'DELETE', path: '/notifications/:id', auth: true, handler: (r) => notification.remove(r) },
 
     // ----- Schedule -----
     { method: 'GET', path: '/schedule', auth: true, handler: (r) => schedule.get(r) },

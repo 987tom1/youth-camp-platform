@@ -8,5 +8,7 @@ export interface StudentNote {
   authorName: string;
   authorChurchId?: string | null;
   sessionId?: string | null;
+  /** Record category: 'note' | 'testimony' | (attendance kinds), free-form for forward compatibility. */
+  category?: string | null;
   createdAt: ISODateString;
 }
