@@ -1,5 +1,7 @@
 # CLAUDE.md — Youth Camp Platform
 
+> **Scope:** the real **camp** app — TS/Express backend (`src/`) + `public/` SPA. The offline demos live in `../youth app demo/CLAUDE.md` (that folder is the Vercel deploy source; `git push` here no longer deploys). Project map: `../CLAUDE.md`. Sibling app: `../youth-allocation-platform/CLAUDE.md`.
+
 Guidance for Claude Code when working in this package. Read this before editing.
 
 ## What this is
