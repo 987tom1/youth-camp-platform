@@ -1115,7 +1115,7 @@ async function switchMode(){
 const ZONE_OPTS=['Yellow','Blue','Green','Red'];
 const zoneSel=(id,s)=>`<select id="${id}">${ZONE_OPTS.map(z=>`<option${z===s?' selected':''}>${z}</option>`).join('')}</select>`;
 RENDER.adminAccounts=async function(){
-  const [users,churches]=await Promise.all([api('/accounts'),api('/churches')]);
+  const [users,churches]=await Promise.all([api('/accounts/users'),api('/accounts/churches')]);
   const leaderRoles=['zoneLeader','director'];
   const leaders=users.filter(u=>leaderRoles.includes(u.role));
   const lr=leaders.map(u=>`<div class="row" style="cursor:default"><div style="flex:1;min-width:0">
@@ -1135,7 +1135,7 @@ RENDER.adminAccounts=async function(){
       <div class="h3">Add account</div>
       <div style="display:flex;gap:6px"><input class="fld" id="aF" placeholder="First name"><input class="fld" id="aL" placeholder="Last name"></div>
       <label>Email</label><input class="fld" id="aE" placeholder="name@church.org">
-      <label>Password</label><input class="fld" id="aP" placeholder="min 6 characters">
+      <label>Password</label><input class="fld" id="aP" placeholder="min 8 characters">
       <label>Role</label><select id="aR" onchange="aRoleChange()">${roleOpts}</select>
       <div id="aChurchWrap"><label>Church</label><select id="aC">${chOpts}</select></div>
       <div id="aZoneWrap" style="display:none"><label>Zone</label>${zoneSel('aZ')}</div>
@@ -1143,10 +1143,11 @@ RENDER.adminAccounts=async function(){
     <div class="card"><div class="lbl" style="margin-top:0">Add a church (with its login)</div>
       <div class="warnbox">⚠ Church name must match registration form exactly — registrations are matched by name.</div>
       <label>Church name</label><input class="fld" id="ncName" placeholder="e.g. Northside">
+      <label>Registration code</label><input class="fld" id="ncCode" placeholder="auto from name if blank, e.g. NORTH">
       <label>Zone</label>${zoneSel('ncZone')}
       <label>Youth pastor name</label><input class="fld" id="ncYp" placeholder="e.g. Ps Sam">
       <label>Login email</label><input class="fld" id="ncEmail" placeholder="church@church.org">
-      <label>Password</label><input class="fld" id="ncPass" placeholder="min 6 characters">
+      <label>Password</label><input class="fld" id="ncPass" placeholder="min 8 characters">
       ${CAMP_MODE==='pre-camp'?`<label>Expected registrations</label><input class="fld" id="ncExp" value="0">`:''}
       <button class="btn" onclick="addChurch()">Create church + account</button></div>
     <div class="card"><div class="lbl" style="margin-top:0">Churches — zone &amp; email</div>${cr||'<p class="note-hint">No churches yet.</p>'}</div>`,'Accounts &amp; churches','Admin');
@@ -1158,8 +1159,8 @@ function aRoleChange(){
 }
 async function addAcct(){const role=sel('aR');const body={firstName:val('aF'),lastName:val('aL'),email:val('aE'),password:val('aP'),role};
   if(role==='zoneLeader')body.zone=sel('aZ');
-  if(!body.firstName||!body.lastName||!body.email){toast('Enter name + email');return;}if((body.password||'').length<6){toast('Password 6+ chars');return;}
-  try{await api('/accounts',{method:'POST',body});toast('Account created ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
+  if(!body.firstName||!body.lastName||!body.email){toast('Enter name + email');return;}if((body.password||'').length<8){toast('Password 8+ chars');return;}
+  try{await api('/accounts/users',{method:'POST',body});toast('Account created ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
 function editAcct(u){document.getElementById('acctEdit').innerHTML=`<div class="card" style="background:#fafbff">
   <div class="lbl" style="margin-top:0">Edit ${esc(u.firstName+' '+u.lastName)}</div>
   <div style="display:flex;gap:6px"><input class="fld" id="eF" value="${esc(u.firstName)}"><input class="fld" id="eL" value="${esc(u.lastName)}"></div>
@@ -1170,42 +1171,47 @@ function editAcct(u){document.getElementById('acctEdit').innerHTML=`<div class="
   <button class="btn ghost sm" style="flex:1" onclick="document.getElementById('acctEdit').innerHTML=''">Cancel</button></div></div>`;}
 async function saveAcct(id,role){const body={firstName:val('eF'),lastName:val('eL'),email:val('eE'),status:sel('eS')};
   if(role==='zoneLeader')body.zone=document.getElementById('eZ').value;
-  try{await api('/accounts/'+id,{method:'PATCH',body});toast('Saved ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
+  try{await api('/accounts/users/'+id,{method:'PATCH',body});toast('Saved ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
 async function delAcct(id){if(!confirm("Delete this account?"))return;
   try{await api("/accounts/users/"+id,{method:"DELETE"});toast("Account deleted");RENDER.adminAccounts();}catch(e){toast(e.message);}}
 async function delChurch(id){if(!confirm("Delete this church and its login account?"))return;
   try{await api("/accounts/churches/"+id,{method:"DELETE"});toast("Church deleted");RENDER.adminAccounts();}catch(e){toast(e.message);}}
-async function addChurch(){if(!val('ncName')||!val('ncEmail')){toast('Enter church name + email');return;}if(val('ncPass').length<6){toast('Password 6+ chars');return;}
-  try{await api('/accounts/church',{method:'POST',body:{churchName:val('ncName'),zone:sel('ncZone'),youthPastorName:val('ncYp')||undefined,email:val('ncEmail'),password:val('ncPass'),expectedCount:Number(val('ncExp'))||0}});toast('Church created ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
+async function addChurch(){if(!val('ncName')||!val('ncEmail')){toast('Enter church name + email');return;}if(val('ncPass').length<8){toast('Password 8+ chars');return;}
+  const name=val('ncName');
+  const slug=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'church';
+  const code=(val('ncCode')||name).replace(/[^A-Za-z0-9]/g,'').slice(0,6).toUpperCase()||'CHURCH';
+  const yp=(val('ncYp')||name).trim().split(/\s+/);
+  const body={churchName:name,zone:sel('ncZone'),code,selfRegisterSlug:slug,expectedCount:Number(val('ncExp'))||0,youthPastorName:val('ncYp')||undefined,accountFirstName:yp[0]||name,accountLastName:yp.slice(1).join(' ')||'Team',accountEmail:val('ncEmail'),accountPassword:val('ncPass')};
+  try{await api('/accounts/churches',{method:'POST',body});toast('Church created ✓');RENDER.adminAccounts();}catch(e){toast(e.message);}}
 async function saveChurch(id){
-  const body={zone:sel('cz_'+id),email:val('ce_'+id)};
+  const body={zone:sel('cz_'+id),contactEmail:val('ce_'+id)};
   const cx=document.getElementById('cx_'+id);if(cx)body.expectedCount=Number(cx.value)||0;
-  try{await api('/churches/'+id,{method:'PATCH',body});toast('Church updated ✓');}catch(e){toast(e.message);}}
+  try{await api('/accounts/churches/'+id,{method:'PATCH',body});toast('Church updated ✓');}catch(e){toast(e.message);}}
 
 /* ===== ADMIN ACCOMMODATION ===== */
 RENDER.adminAccom=async function(){
-  const [blocks,rooms]=await Promise.all([api('/accommodation/blocks'),api('/classrooms')]);
-  window._adminTents=blocks.filter(b=>b.kind==='tent');window._adminRooms=rooms;
-  const tentInputs=window._adminTents.map(b=>`<div style="flex:1"><label style="font-size:.62rem">△ ${esc(b.name)} capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}"></div>`).join('');
-  const roomRows=rooms.map(rm=>`<div class="card" style="padding:8px 10px;display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">
-    <div style="flex:2"><label style="font-size:.62rem">Room name</label><input class="fld" id="rn_${rm.id}" value="${esc(rm.name)}"></div>
-    <button class="btn red sm" style="margin-bottom:1px" onclick="delRoom('${rm.id}')">Delete</button>
-    <div style="flex:1"><label style="font-size:.62rem">Capacity</label><input class="fld" id="rc_${rm.id}" value="${rm.capacity}"></div></div>`).join('');
-  paint('adminAccom',`<div class="infobox">Camp-wide prices are in <b>Camp settings</b>. These classroom rooms are the same rooms used on the Accommodation allocations page.</div>
-    <button class="btn" onclick="saveAllRooms()">Save all</button>
-    <h3 class="sec">Tents</h3><div class="card" style="display:flex;gap:8px">${tentInputs||'<span class="sub">No tent space.</span>'}</div>
-    <h3 class="sec">Classroom rooms</h3>${roomRows||'<p class="note-hint">No rooms yet.</p>'}
-    <div class="card"><div class="lbl" style="margin-top:0">Add a classroom room</div>
-    <div style="display:flex;gap:6px;align-items:flex-end"><div style="flex:2"><label>Name</label><input class="fld" id="nrName" placeholder="e.g. Room 7"></div><div style="flex:1"><label>Capacity</label><input class="fld" id="nrCap" value="8"></div></div>
-    <button class="btn" style="margin-top:8px" onclick="addRoom()">Add room</button></div>`,'Accommodation setup','Tents &amp; classroom rooms');
+  // Backend model is accommodation blocks (tent/classroom spaces with capacity + price).
+  const blocks=await api('/accommodation/blocks');
+  window._adminBlocks=blocks||[];
+  const blockCards=(blocks||[]).map(b=>`<div class="card" style="background:#fafbff">
+    <div class="rowsb"><div style="font-weight:700">${b.kind==='tent'?'△':'⌂'} ${esc(b.name)}</div><button class="btn red sm" onclick="delBlock('${b.id}')">Delete</button></div>
+    <div style="display:flex;gap:6px;margin-top:6px"><div style="flex:1"><label style="font-size:.62rem">Name</label><input class="fld" id="bn_${b.id}" value="${esc(b.name)}"></div></div>
+    <div style="display:flex;gap:6px;margin-top:6px"><div style="flex:1"><label style="font-size:.62rem">Capacity</label><input class="fld" id="bc_${b.id}" value="${b.capacity}"></div>
+    <div style="flex:1"><label style="font-size:.62rem">Price $</label><input class="fld" id="bp_${b.id}" value="${b.price}"></div>
+    <div style="flex:1"><label style="font-size:.62rem">Already taken</label><input class="fld" id="bt_${b.id}" value="${b.baseTaken||0}"></div></div>
+    <button class="btn sm" style="width:100%;margin-top:8px" onclick="saveBlock('${b.id}')">Save</button></div>`).join('')||'<p class="note-hint">No spaces yet.</p>';
+  paint('adminAccom',`<div class="infobox">Define the camp's accommodation spaces — tents &amp; classroom blocks with capacity and price. Per-church spot allocation is on the Accommodation allocations page.</div>
+    ${blockCards}
+    <div class="card"><div class="lbl" style="margin-top:0">Add a space</div>
+    <label>Type</label><select id="nbKind"><option value="tent">Tent</option><option value="classroom">Classroom</option></select>
+    <label>Name</label><input class="fld" id="nbName" placeholder="e.g. Classroom Block 2">
+    <div style="display:flex;gap:6px"><div style="flex:1"><label>Capacity</label><input class="fld" id="nbCap" value="40"></div>
+    <div style="flex:1"><label>Price $</label><input class="fld" id="nbPrice" value="120"></div></div>
+    <button class="btn" onclick="addBlock()">Add space</button></div>`,'Accommodation setup','Tent &amp; classroom spaces');
 };
-async function saveAllRooms(){try{
-  await Promise.all((window._adminRooms||[]).map(rm=>api('/classrooms/'+rm.id,{method:'PATCH',body:{name:val('rn_'+rm.id),capacity:Number(val('rc_'+rm.id))||0}})));
-  await Promise.all((window._adminTents||[]).map(b=>api('/accommodation/blocks/'+b.id,{method:'PATCH',body:{capacity:Number(val('bc_'+b.id))||0}})));
-  toast('Saved ✓');RENDER.adminAccom();
-}catch(e){toast(e.message);}}
-async function delRoom(id){if(!confirm('Delete this room?'))return;try{await api('/classrooms/'+id,{method:'DELETE'});toast('Deleted');RENDER.adminAccom();}catch(e){toast(e.message);}}
-async function addRoom(){if(!val('nrName')){toast('Enter a room name');return;}try{await api('/classrooms',{method:'POST',body:{name:val('nrName'),capacity:Number(val('nrCap'))||0}});toast('Room added ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function saveBlock(id){try{await api('/accommodation/blocks/'+id,{method:'PATCH',body:{name:val('bn_'+id),capacity:Number(val('bc_'+id))||0,price:Number(val('bp_'+id))||0,baseTaken:Number(val('bt_'+id))||0}});toast('Saved ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function delBlock(id){if(!confirm('Delete this space?'))return;try{await api('/accommodation/blocks/'+id,{method:'DELETE'});toast('Deleted');RENDER.adminAccom();}catch(e){toast(e.message);}}
+async function addBlock(){if(!val('nbName')){toast('Enter a name');return;}try{await api('/accommodation/blocks',{method:'POST',body:{kind:sel('nbKind'),name:val('nbName'),capacity:Number(val('nbCap'))||0,price:Number(val('nbPrice'))||0}});toast('Space added ✓');RENDER.adminAccom();}catch(e){toast(e.message);}}
 
 /* ===== ADMIN FAQ (pre-camp) ===== */
 RENDER.adminFaq=async function(){
@@ -1247,16 +1253,13 @@ RENDER.adminSettings=async function(){
     <label>Register base URL</label><input class="fld" id="stUrl" value="${esc(s.registerBaseUrl||'')}">
     <label>At-camp check-in days (comma-separated YYYY-MM-DD)</label>
     <input class="fld" id="stDays" value="${esc((s.checkInDays||[]).join(', '))}">
-    <div class="h3">Camp-wide pricing</div>
-    <div style="display:flex;gap:6px"><div style="flex:1"><label>△ Tent price ($/person)</label><input class="fld" id="stTent" value="${esc(s.tentPrice??140)}"></div>
-    <div style="flex:1"><label>⌂ Classroom price ($/person)</label><input class="fld" id="stClass" value="${esc(s.classroomPrice??120)}"></div></div>
     <button class="btn" onclick="saveSettings()">Save camp settings</button>
-    <p class="note-hint">Changing check-in days updates the daily check-in automatically.</p></div>`,'Camp settings','Dates &amp; details');
+    <p class="note-hint">Tent &amp; classroom prices are set per space in Admin → Accommodation. Changing check-in days updates the daily check-in automatically.</p></div>`,'Camp settings','Dates &amp; details');
 };
 async function saveSettings(){
   try{
     const days=document.getElementById('stDays').value.split(',').map(x=>x.trim()).filter(Boolean);
-    await api('/settings',{method:'PATCH',body:{campName:val('stName'),year:Number(val('stYear'))||new Date().getFullYear(),startDate:val('stStart'),endDate:val('stEnd'),timezone:val('stTz'),checkInLocation:val('stLoc'),checkInFrom:val('stFrom'),registerBaseUrl:val('stUrl'),checkInDays:days,tentPrice:Number(val('stTent'))||0,classroomPrice:Number(val('stClass'))||0}});
+    await api('/settings',{method:'PATCH',body:{campName:val('stName'),year:Number(val('stYear'))||new Date().getFullYear(),startDate:val('stStart'),endDate:val('stEnd'),timezone:val('stTz'),checkInLocation:val('stLoc'),checkInFrom:val('stFrom'),registerBaseUrl:val('stUrl'),checkInDays:days}});
     SETTINGS=await api('/settings');SESSIONS=[];SEL_SESSION=null;SCHED_DAY=null;DEVO_DAY=null;
     toast('Settings saved ✓');
   }catch(e){toast(e.message);}
@@ -1264,8 +1267,8 @@ async function saveSettings(){
 
 /* ===== ADMIN DATA ===== */
 RENDER.adminData=function(){
-  const uploadSection=CAMP_MODE==='at-camp'?`<div class="card"><div class="h3" style="margin-top:0">Upload students (CSV or Excel)</div>
-    <input type="file" id="fileIn" accept=".csv,.xlsx" class="fld">
+  const uploadSection=CAMP_MODE==='at-camp'?`<div class="card"><div class="h3" style="margin-top:0">Upload students (CSV)</div>
+    <input type="file" id="fileIn" accept=".csv" class="fld">
     <button class="btn" onclick="adminUpload()">Upload &amp; import</button>
     <p class="note-hint">Matches existing students by name — adds new ones and updates changed fields.</p>
     <div id="impResult" class="card" style="margin-top:10px;display:none"></div></div>
@@ -1281,23 +1284,21 @@ RENDER.adminData=function(){
       <p class="note-hint" style="text-align:left">Wipes everything back to the demo seed. Signs you out.</p></div>`,'Camp data','Upload / reset');
 };
 async function adminSaveDefaults(){if(!confirm('Save the current scaffold as the new-year baseline?'))return;
-  try{const r=await api('/admin/save-defaults',{method:'POST'});toast('Baseline saved: '+r.churches+' churches, '+r.users+' accounts ✓');}catch(e){toast(e.message);}}
+  try{const r=await api('/admin/defaults',{method:'POST'});toast('Baseline saved: '+(r.churches!=null?r.churches+' churches, ':'')+(r.users!=null?r.users+' accounts ':'')+'✓');}catch(e){toast(e.message);}}
 async function adminNewYear(){if(!confirm('Purge ALL registrations/students and start a new year? Cannot be undone.'))return;
   try{const r=await api('/admin/new-year',{method:'POST'});alert('New year started — purged '+(r.purged?.registrants||0)+' registrations, '+(r.purged?.campers||0)+' students.'+(r.restored?' Baseline restored.':' (No saved baseline — set one first.)'));RENDER.adminData();}catch(e){toast(e.message);}}
 async function adminReset(){if(!confirm('Reset the database to the demo seed? You will be signed out.'))return;
   try{await api('/admin/reset',{method:'POST'});alert('Database reset. Signing out.');logout();}catch(e){toast(e.message);}}
 async function adminClear(){if(!confirm('Clear all notifications?'))return;
-  try{const r=await api('/admin/clear-notifications',{method:'POST'});toast('Cleared '+(r.cleared||0)+' notices');}catch(e){toast(e.message);}}
+  try{const r=await api('/admin/notifications',{method:'DELETE'});toast('Cleared '+(r.deleted||r.cleared||0)+' notices');}catch(e){toast(e.message);}}
 function adminUpload(){
-  const f=document.getElementById('fileIn')?.files[0];if(!f){toast('Choose a file first');return;}
-  const isCsv=f.name.toLowerCase().endsWith('.csv');const reader=new FileReader();
+  const f=document.getElementById('fileIn')?.files[0];if(!f){toast('Choose a CSV file first');return;}
+  if(!f.name.toLowerCase().endsWith('.csv')){toast('Only CSV files are supported');return;}
+  const reader=new FileReader();
   reader.onload=async()=>{try{
-    let body;
-    if(isCsv){body={csv:reader.result};}
-    else{const bytes=new Uint8Array(reader.result);let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);body={fileBase64:btoa(bin),fileName:f.name};}
-    const r=await api('/import/campers',{method:'POST',body});
+    const r=await api('/import/csv',{method:'POST',body:{csvData:reader.result,updateExisting:true}});
     const box=document.getElementById('impResult');box.style.display='block';
-    box.innerHTML=`<b style="color:#15803d">${r.created}</b> new · <b>${r.updated}</b> updated · ${r.unchanged} unchanged · <b style="color:#b91c1c">${r.failed}</b> failed`;
+    box.innerHTML=`<b style="color:#15803d">${r.created}</b> new · <b>${r.updated}</b> updated · ${r.skipped} skipped · <b style="color:#b91c1c">${(r.errors||[]).length}</b> errors`;
     toast('Import complete');
   }catch(e){toast(e.message);}};
   if(isCsv)reader.readAsText(f);else reader.readAsArrayBuffer(f);
@@ -1308,7 +1309,7 @@ RENDER.adminDevos=async function(){
   const days=SETTINGS?.checkInDays||[];
   if(!days.length){paint('adminDevos','<p class="note-hint">Set the camp dates first (Camp settings).</p>','Devotionals','');return;}
   const blocks=await Promise.all(days.map(async d=>{
-    const dv=await api('/devotional?day='+d).catch(()=>null);
+    const dv=await api('/devotional/'+d).catch(()=>null);
     const wk=dayLong(d);
     return `<div class="card"><div class="h3" style="margin-top:0">${wk} · ${d}</div>
       <textarea id="dv_v_${d}" placeholder="Verse">${esc(dv?.verse||'')}</textarea>
@@ -1355,7 +1356,7 @@ async function delSched(id){if(!confirm('Delete this item?'))return;try{await ap
 
 /* ===== ADMIN CONTACTS ===== */
 RENDER.adminContacts=async function(){
-  const churches=await api('/churches');
+  const churches=await api('/accounts/churches');
   paint('adminContacts',churches.map(c=>{const ct=c.contacts||{};
     const mp=ct.male?.primary||{},mb=ct.male?.backup||{},fp=ct.female?.primary||{},fb=ct.female?.backup||{};
     const pair=(lbl,n,p,nv,pv)=>`<label>${lbl}</label><div style="display:flex;gap:6px"><input class="fld" id="${n}" placeholder="Name" value="${esc(nv||'')}"><input class="fld" id="${p}" placeholder="Phone" value="${esc(pv||'')}"></div>`;
@@ -1368,7 +1369,7 @@ RENDER.adminContacts=async function(){
       <p class="note-hint">Leave blank to clear. Numbers are masked until audited reveal.</p></div>`;}).join(''),'Ministry contacts','Primary &amp; backup per gender');
 };
 async function saveContacts(id){const C=(n,p)=>({name:val(n),phone:val(p)});
-  try{await api('/churches/'+id,{method:'PATCH',body:{contacts:{male:{primary:C('mp_n_'+id,'mp_p_'+id),backup:C('mb_n_'+id,'mb_p_'+id)},female:{primary:C('fp_n_'+id,'fp_p_'+id),backup:C('fb_n_'+id,'fb_p_'+id)}}}});toast('Contacts saved ✓');}catch(e){toast(e.message);}}
+  try{await api('/accounts/churches/'+id,{method:'PATCH',body:{contacts:{male:{primary:C('mp_n_'+id,'mp_p_'+id),backup:C('mb_n_'+id,'mb_p_'+id)},female:{primary:C('fp_n_'+id,'fp_p_'+id),backup:C('fb_n_'+id,'fb_p_'+id)}}}});toast('Contacts saved ✓');}catch(e){toast(e.message);}}
 
 /* ===== BOOT ===== */
 document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});

@@ -56,6 +56,15 @@ export const CreateChurchWithAccountSchema = z.object({
 
 export type CreateChurchWithAccountInput = z.infer<typeof CreateChurchWithAccountSchema>;
 
+const ChurchContactSchema = z.object({
+  name: z.string().default(''),
+  phone: z.string().default(''),
+});
+const ChurchContactsSchema = z.object({
+  male: z.object({ primary: ChurchContactSchema, backup: ChurchContactSchema }),
+  female: z.object({ primary: ChurchContactSchema, backup: ChurchContactSchema }),
+});
+
 export const UpdateChurchSchema = z.object({
   name: z.string().min(1).optional(),
   zone: z.enum(ZONE_NAMES).optional(),
@@ -65,6 +74,7 @@ export const UpdateChurchSchema = z.object({
   youthPastorName: z.string().optional(),
   contactEmail: z.string().email().optional(),
   contactPhone: z.string().optional(),
+  contacts: ChurchContactsSchema.optional(),
 });
 
 export type UpdateChurchInput = z.infer<typeof UpdateChurchSchema>;
